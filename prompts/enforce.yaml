@@ -6,6 +6,10 @@ user: |
   Implement the judged feature request at features/{feature_name}/FR.md, using
   features/{feature_name}/judgement.md as the frozen scope constraint.
 
+  If features/{feature_name}/judgement.md has verdict APPROVED WITH REVISIONS,
+  first fold every required revision into features/{feature_name}/FR.md, then
+  implement the folded feature request.
+
   Author only YAMLGraph feature artifacts under:
   features/{feature_name}/
 

@@ -105,6 +105,28 @@ tools:
     parse: text
     timeout: 120
 
+  read_judgement_file_decision:
+    type: shell
+    command: >-
+      sed -n 's/^\*\*Verdict:\*\* \([A-Z][A-Z ]*[A-Z]\).*/\1/p'
+      features/{feature_name}/judgement.md 2>/dev/null
+      | head -1
+      | tr -d '\n'
+    description: "Read the judgement decision from features/{feature_name}/judgement.md."
+    parse: text
+    timeout: 30
+
+  read_review_file_decision:
+    type: shell
+    command: >-
+      sed -n 's/^\*\*Verdict:\*\* \([A-Z][A-Z ]*[A-Z]\).*/\1/p'
+      features/{feature_name}/review.md 2>/dev/null
+      | head -1
+      | tr -d '\n'
+    description: "Read the review decision from features/{feature_name}/review.md."
+    parse: text
+    timeout: 30
+
   push_feature_and_close:
     type: shell
     command: >-
@@ -166,10 +188,12 @@ nodes:
       feature_name: "{state.feature_name}"
     state_key: judge_result
 
-  judge_gate:
-    type: passthrough
-    output:
-      judge_output: "{state.judge_result.output}"
+  read_judge_verdict:
+    type: tool
+    tool: read_judgement_file_decision
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: judge_verdict
 
   ledger_judged_approved:
     type: tool
@@ -223,10 +247,12 @@ nodes:
     state_key: review_result
     skip_if_exists: false
 
-  review_gate:
-    type: passthrough
-    output:
-      review_output: "{state.review_result.output}"
+  read_review_verdict:
+    type: tool
+    tool: read_review_file_decision
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: review_verdict
     skip_if_exists: false
 
   ledger_reviewed_approved:
@@ -281,52 +307,55 @@ edges:
   - from: ledger_planned
     to: judge
   - from: judge
-    to: judge_gate
-  - from: judge_gate
+    to: read_judge_verdict
+  - from: read_judge_verdict
     to: ledger_judged_approved
-    condition: "judge_output == 'VERDICT: APPROVED'"
+    condition: "judge_verdict == 'APPROVED' or judge_verdict == 'APPROVED WITH REVISIONS'"
   - from: ledger_judged_approved
     to: enforce
-  - from: judge_gate
+  - from: read_judge_verdict
     to: reject_close
-    condition: "judge_output != 'VERDICT: APPROVED'"
+    condition: "judge_verdict == 'REJECTED'"
   - from: reject_close
     to: END
+  - from: read_judge_verdict
+    to: END
+    condition: "judge_verdict != 'APPROVED' and judge_verdict != 'APPROVED WITH REVISIONS' and judge_verdict != 'REJECTED'"
   - from: enforce
     to: ledger_enforced
   - from: ledger_enforced
     to: review
   - from: review
-    to: review_gate
-  - from: review_gate
+    to: read_review_verdict
+  - from: read_review_verdict
     to: ledger_reviewed_approved
-    condition: "review_output == 'REVIEW: APPROVED'"
+    condition: "review_verdict == 'APPROVED' or review_verdict == 'APPROVED WITH REVISIONS'"
   - from: ledger_reviewed_approved
     to: contain
   - from: contain
     to: push
   - from: push
     to: END
-  - from: review_gate
+  - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce == null"
-  - from: review_gate
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce == null"
+  - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce < 2"
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce < 2"
   - from: ledger_reviewed_rejected
     to: enforce
-  - from: review_gate
+  - from: read_review_verdict
     to: reject_final
-    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce >= 2"
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce >= 2"
   - from: reject_final
     to: END
-  - from: review_gate
+  - from: read_review_verdict
     to: END
-    condition: "review_output != 'REVIEW: APPROVED' and review_output != 'REVIEW: REJECTED'"
+    condition: "review_verdict != 'APPROVED' and review_verdict != 'APPROVED WITH REVISIONS' and review_verdict != 'REJECTED'"
 
 loop_limits:
   enforce: 2
   ledger_enforced: 2
   ledger_reviewed_rejected: 1
   review: 2
-  review_gate: 2
+  read_review_verdict: 2

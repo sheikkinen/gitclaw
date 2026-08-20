@@ -9,6 +9,13 @@ user: |
   Write the judgement artifact to:
   features/{feature_name}/judgement.md
 
+  The judgement file is the authoritative decision artifact; stdout is ignored
+  by the workflow gate. The file must contain a line beginning exactly with one
+  of:
+  - **Verdict:** APPROVED
+  - **Verdict:** APPROVED WITH REVISIONS
+  - **Verdict:** REJECTED
+
   Constraints for generated gitclaw features:
   - They must be YAMLGraph-only artifacts: graph.yaml plus prompts/.
   - They must not require new secrets or external side effects beyond the
@@ -16,8 +23,5 @@ user: |
   - Gaps in YAMLGraph core or gitclaw workflow machinery belong in a separate
     feature request, not inline implementation scope.
 
-  After writing the judgement file, print exactly one line to stdout and
-  nothing else:
-  VERDICT: APPROVED
-  or
-  VERDICT: REJECTED
+  After writing the judgement file, stdout may contain a short completion note,
+  but it is not used for routing.

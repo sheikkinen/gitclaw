@@ -11,11 +11,14 @@ user: |
   Write the review artifact to:
   features/{feature_name}/review.md
 
+  The review file is the authoritative decision artifact; stdout is ignored by
+  the workflow gate. The file must contain a line beginning exactly with one of:
+  - **Verdict:** APPROVED
+  - **Verdict:** APPROVED WITH REVISIONS
+  - **Verdict:** REJECTED
+
   Review only the generated feature diff and report whether it satisfies the
   frozen scope and validation requirements.
 
-  After writing the review file, print exactly one line to stdout and nothing
-  else:
-  REVIEW: APPROVED
-  or
-  REVIEW: REJECTED
+  After writing the review file, stdout may contain a short completion note,
+  but it is not used for routing.
