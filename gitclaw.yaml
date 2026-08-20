@@ -143,14 +143,14 @@ tools:
       && git pull --rebase &&
       git push
       && python -m tools.ledger record {issue_number} pushed
-      && gh issue comment {issue_number} --body "Implemented in $(git rev-parse HEAD)"
       && python -m tools.ledger record {issue_number} closed
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} closed"
-      && gh issue close {issue_number}
       && git pull --rebase &&
       git push
-    description: "Commit and push the contained feature, record pushed and closed ledger transitions, comment, close, and push the ledger."
+      && gh issue comment {issue_number} --body "Implemented in $(git log -1 --format=%H -- features/{feature_name})"
+      && gh issue close {issue_number}
+    description: "Commit and push the contained feature, record pushed and closed ledger transitions, push the ledger, then comment the post-rebase SHA and close."
     parse: text
     timeout: 120
 

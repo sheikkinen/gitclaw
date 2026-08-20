@@ -155,5 +155,6 @@ multi-user operation.
   signal.
 - One remediation lap on review rejection, then final reject — no
   infinite enforce loops.
+- `tools/` requires Python ≥ 3.10 (`X | Y` unions); workflows pin 3.12.
 
 Governed by yamlgraph FR-827.

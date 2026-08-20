@@ -73,7 +73,7 @@ jobs:
         if: steps.gate.outputs.verdict == 'run'
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
-        run: echo "FEATURE=$(python -m tools.slug "$ISSUE_TITLE")" >> "$GITHUB_ENV"
+        run: echo "FEATURE=$(python -m tools.slug "$ISSUE_TITLE" "${{ github.event.issue.number }}")" >> "$GITHUB_ENV"
 
       - name: Run pipeline
         if: steps.gate.outputs.verdict == 'run'

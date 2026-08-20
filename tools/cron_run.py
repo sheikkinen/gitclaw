@@ -44,12 +44,16 @@ def extract_output(state: dict, feature: str) -> str | None:
 
 def run_feature(graph: Path, date: str) -> tuple[bool, str]:
     """Returns (ok, text): output text on success, reason on failure."""
-    proc = subprocess.run(
-        ["yamlgraph", "graph", "run", str(graph), "--var", f"date={date}", "--json"],
-        capture_output=True,
-        text=True,
-        timeout=600,
-    )
+    try:
+        proc = subprocess.run(
+            ["yamlgraph", "graph", "run", str(graph), "--var", f"date={date}", "--json"],
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+    except subprocess.TimeoutExpired:
+        # one hung feature must never starve the rest
+        return False, "timeout after 600s"
     if proc.returncode != 0:
         return False, f"exit {proc.returncode}: {proc.stderr[-500:]}"
     try:
