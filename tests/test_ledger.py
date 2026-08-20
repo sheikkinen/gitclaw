@@ -7,6 +7,36 @@ import pytest
 from tools import ledger
 
 
+SOURCE_REPO = "sheikkinen/gitclaw"
+COOKBOOK_REPO = "sheikkinen/gitclaw-oulu-civic-intelligence"
+
+
+def test_same_issue_number_is_scoped_by_repository(tmp_path):
+    path = tmp_path / "issues.jsonl"
+    ledger.record(path, SOURCE_REPO, 1, "seen")
+    ledger.record(path, SOURCE_REPO, 1, "judged_rejected")
+    assert ledger.gate_code(path, SOURCE_REPO, 1) == 78
+    assert ledger.gate_code(path, COOKBOOK_REPO, 1) == 0
+
+
+def test_record_persists_repository(tmp_path):
+    path = tmp_path / "issues.jsonl"
+    ledger.record(path, SOURCE_REPO, 7, "seen")
+    assert json.loads(path.read_text())["repository"] == SOURCE_REPO
+
+
+@pytest.mark.parametrize("repository", ["", "owner", "/repo", "owner/", "a/b/c"])
+def test_repository_identity_rejected(repository, tmp_path):
+    with pytest.raises(ValueError):
+        ledger.gate_code(tmp_path / "issues.jsonl", repository, 1)
+
+
+def test_cli_requires_repository_environment(monkeypatch):
+    monkeypatch.delenv("GITCLAW_REPOSITORY", raising=False)
+    with pytest.raises(SystemExit, match="GITCLAW_REPOSITORY"):
+        ledger.main(["should-run", "1"])
+
+
 def test_transitions_frozen():
     assert ledger.TRANSITIONS["seen"] == {"planned", "failed_recovery_required"}
     assert ledger.TRANSITIONS["planned"] == {
