@@ -13,3 +13,5 @@
 {"issue": 3, "state": "judged_approved", "ts": "2026-08-20T01:45:54Z"}
 {"issue": 3, "state": "enforced", "ts": "2026-08-20T01:46:48Z"}
 {"issue": 3, "state": "reviewed_approved", "ts": "2026-08-20T01:47:45Z"}
+{"issue": 3, "state": "pushed", "ts": "2026-08-20T01:47:48Z"}
+{"issue": 3, "state": "closed", "ts": "2026-08-20T01:47:53Z"}
