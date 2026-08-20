@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "source": "https://github.com/sheikkinen/yamlgraph",
+  "source_sha": "15f134d8ddf8e16266170ed57fdebfd3d67e11de",
+  "bundle_roots": [
+    ".github/hooks",
+    ".github/skills/feature-request",
+    ".github/skills/graph-authoring",
+    ".github/skills/judge-fr",
+    ".github/skills/review-pr",
+    "scripts/control-bundle"
+  ],
+  "files": [
+    {
+      "source": ".github/copilot-instructions.md",
+      "target": ".github/copilot-instructions.md",
+      "sha256": "23bdcce046ec706efe77e4f050c8a20384c5c5752369be87c1eca8ac5c03711e",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/post-edit-checks.json",
+      "target": ".github/hooks/post-edit-checks.json",
+      "sha256": "215fa6e4554ef11813185f3a34f0323aeba7efe907637d03409dae2aebcf6711",
+      "mode": "100644",
+      "disposition": "adapt-local"
+    },
+    {
+      "source": ".github/hooks/pre-command-guard.json",
+      "target": ".github/hooks/pre-command-guard.json",
+      "sha256": "99caa72de1b9f00a34c919f3962bd4069711971bc600c60343e275620b90ebf5",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/scripts/checks/common.sh",
+      "target": ".github/hooks/scripts/checks/common.sh",
+      "sha256": "9b8cf965dbf74ff57aaa3bd2864e9fea5679f8c02071899c4288a306b5c1ec53",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/scripts/checks/markdown-checks.sh",
+      "target": ".github/hooks/scripts/checks/markdown-checks.sh",
+      "sha256": "11409b4a82525b1937bee6fdfda4c604c03c449d5b6d00767de4dd035126ad69",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/scripts/checks/python-checks.sh",
+      "target": ".github/hooks/scripts/checks/python-checks.sh",
+      "sha256": "1d8384fcc852a236cad42e06c0b51155ee5bd45889e1c56ee5e8c09ec00d5ad2",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/scripts/checks/yaml-checks.sh",
+      "target": ".github/hooks/scripts/checks/yaml-checks.sh",
+      "sha256": "5db96ed9decc2c2402ac5782b1430c8d75746b8a27420d74086244c7b2aafdcb",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/hooks/scripts/pre-command-guard.sh",
+      "target": ".github/hooks/scripts/pre-command-guard.sh",
+      "sha256": "eca18e22639ea8d57eae92cbd51fb8ddd72a70a1f1ef224c33dbd980e2afc744",
+      "mode": "100755",
+      "disposition": "adapt-local"
+    },
+    {
+      "source": ".github/skills/feature-request/SKILL.md",
+      "target": ".github/skills/feature-request/SKILL.md",
+      "sha256": "738897a9cc1fc847b9cc0fc8346d8df5a71fed64817bf59b1c92639562aaa823",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/graph-authoring/SKILL.md",
+      "target": ".github/skills/graph-authoring/SKILL.md",
+      "sha256": "35ca22e3822f0864fdeecdfb7db3aab51f111be7ff41fe186870da848a03a81c",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/graph-authoring/adapters/README.md",
+      "target": ".github/skills/graph-authoring/adapters/README.md",
+      "sha256": "34fef2caca43429f2f9224e20de1e47e3a811cdf970df2a4159106c2fbefe313",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/graph-authoring/adapters/graph.yaml",
+      "target": ".github/skills/graph-authoring/adapters/graph.yaml",
+      "sha256": "485eb1459275750df217582d7ac74419704784cdb19357b5f97af4860562fd99",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/graph-authoring/adapters/prompts/author.yaml",
+      "target": ".github/skills/graph-authoring/adapters/prompts/author.yaml",
+      "sha256": "f00965a5041679b963984b5b06c2c54433abc35ef1c06b87e21c830dd684870f",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/graph-authoring/doctrine.md",
+      "target": ".github/skills/graph-authoring/doctrine.md",
+      "sha256": "c4e0d9ab2c5103790a4dc02ffe3dddc1038eb7e533707d6a52b8dc2e85c8c14e",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/MANIFEST.yaml",
+      "target": ".github/skills/judge-fr/MANIFEST.yaml",
+      "sha256": "b23c38678e6b2e4df80bcf22222d137e5de27c83a7f188e452450330f6164cc4",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/SKILL.md",
+      "target": ".github/skills/judge-fr/SKILL.md",
+      "sha256": "bbea003b040d9b2bfe882d3543802628d16278c77c4e034f98bf6d88f31fb747",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/adapters/README.md",
+      "target": ".github/skills/judge-fr/adapters/README.md",
+      "sha256": "a2172858e32cf3c7c8d24cb4098b53ac9971d21a21d989d6907eb7cb2ff9c15e",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/adapters/graph.yaml",
+      "target": ".github/skills/judge-fr/adapters/graph.yaml",
+      "sha256": "86d6f89cb57791d02d06f1e21159eb45f2a2b495b563db6169f3234f44ae95c5",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/adapters/prompts/judge.yaml",
+      "target": ".github/skills/judge-fr/adapters/prompts/judge.yaml",
+      "sha256": "1c8a7703c1b952ceb1b2920d9a9c9f317a47c1ed5c9f588ef7b6f66f2329beee",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/doctrine.md",
+      "target": ".github/skills/judge-fr/doctrine.md",
+      "sha256": "19c54ac5c7c278ea98a8e4b0dc00e06f0086a89dd0a5a14a48caee59cee81740",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/judge-fr/judgement.template.md",
+      "target": ".github/skills/judge-fr/judgement.template.md",
+      "sha256": "ee50eac9b88df18c1681c178209d506e784664e1df0e62840178e70c54106ba8",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/SKILL.md",
+      "target": ".github/skills/review-pr/SKILL.md",
+      "sha256": "707fd275de678691b82ce848987ef79fde7c013596719aa01f09df90e5a1fc97",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/adapters/README.md",
+      "target": ".github/skills/review-pr/adapters/README.md",
+      "sha256": "452041e24ecc7995643987015e2677b6d4a2bc1afa01adeb3352cf19dd9ea45e",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/adapters/graph.yaml",
+      "target": ".github/skills/review-pr/adapters/graph.yaml",
+      "sha256": "006ef546fab3e1c955af5bd00a162ded936a581e7046994c42270c0a1355194e",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/adapters/prompts/review.yaml",
+      "target": ".github/skills/review-pr/adapters/prompts/review.yaml",
+      "sha256": "481044a99775e2f108332ecebd670502da75b56073207b4e1f2efa6792294ff2",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/doctrine.md",
+      "target": ".github/skills/review-pr/doctrine.md",
+      "sha256": "14c4e8f96cbc78d08a679dfb3c1fbf24fd2ba314ca53b6b1ec22511678287e9c",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": ".github/skills/review-pr/review.template.md",
+      "target": ".github/skills/review-pr/review.template.md",
+      "sha256": "5671c6aa390a9adaa55c0557c2c7534848d0aedb36f07a4f70686fd69228837a",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": "scripts/author.sh",
+      "target": "scripts/author.sh",
+      "sha256": "b972e9dbc3eef4e2cf0143ca890a88e7186dd4138d9597c8367888b3a4c96daf",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": "scripts/author_preflight.py",
+      "target": "scripts/author_preflight.py",
+      "sha256": "2c7806ce82798b9cecdff37f78b928456759cbb671af34831ad623aebe08184c",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
+      "source": "scripts/check_authoring_proof.py",
+      "target": "scripts/control-bundle/verify.py",
+      "sha256": "429aeac425bf7252c34cbf7bee0d90334f96383208be4706c43763ed6257a093",
+      "mode": "100644",
+      "disposition": "adapt-local"
+    },
+    {
+      "source": "scripts/judge.sh",
+      "target": "scripts/judge.sh",
+      "sha256": "d47384fa21e7dbd0036c5b8809e22b635398ec4ed182cf92c1ca8b3c4f4123de",
+      "mode": "100755",
+      "disposition": "mirror"
+    },
+    {
+      "source": "scripts/review.sh",
+      "target": "scripts/review.sh",
+      "sha256": "688549299935b36d153e40b913f0903c1ddc87e0bae237148b0f9f9e23e8a551",
+      "mode": "100755",
+      "disposition": "mirror"
+    }
+  ]
+}

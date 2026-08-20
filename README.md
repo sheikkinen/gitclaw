@@ -54,6 +54,32 @@ the sole barrier** before LLM execution with secrets:
 Anonymous/other issues never reach the LLM. Issue text enters shell
 steps only via `env:` blocks, never inline `${{ }}` interpolation.
 
+## Executable control bundle
+
+GitClaw mirrors YAMLGraph's agent instructions, four workflow skills, canonical
+judge/author/review adapters, and relevant hooks from source commit
+`15f134d8ddf8e16266170ed57fdebfd3d67e11de`. `control-bundle.json` pins every
+runtime file by path, SHA-256, mode, and mirror/adaptation disposition;
+`control-bundle-trace.md` records the measured dependency closure.
+
+Verify a checkout with:
+
+```bash
+python -m tools.control_bundle
+```
+
+Clean-clone adapter witnesses require Python 3.12, Node 22, POSIX `sh`/`bash`,
+`git`, `find`, `grep`, `awk`, `sed`, `od`, `tr`, and:
+
+```bash
+npm install -g @github/copilot
+pip install yamlgraph
+export YAMLGRAPH_BIN="$(command -v yamlgraph)"  # when wrapper PATH resolution needs it
+```
+
+The mirrored adapters are advisory artifact producers. They never own commits,
+pushes, PR/issue mutation, or merge decisions.
+
 ## Pipeline
 
 ```

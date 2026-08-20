@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/checks/python-checks.sh",
+        "timeout": 10
+      },
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/checks/yaml-checks.sh",
+        "timeout": 10
+      },
+      {
+        "type": "command",
+        "command": ".github/hooks/scripts/checks/markdown-checks.sh",
+        "timeout": 5
+      }
+    ]
+  }
+}

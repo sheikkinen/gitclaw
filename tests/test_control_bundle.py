@@ -1,6 +1,8 @@
 """FR-846 executable control bundle contract."""
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -55,6 +57,125 @@ def test_hook_guarantees_are_configured():
     assert "scripts/author.sh" in guard
     assert "features/" in guard
     assert "prompts/" in guard
+
+
+def run_guard(payload: dict, env: dict | None = None) -> dict:
+    result = subprocess.run(
+        [".github/hooks/scripts/pre-command-guard.sh"],
+        cwd=ROOT,
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HOOK_LOG_DIR": str(ROOT / "tmp/test-hook-logs"), **(env or {})},
+        check=True,
+    )
+    return json.loads(result.stdout)
+
+
+def test_guard_fails_closed_on_unparseable_payload():
+    result = subprocess.run(
+        [".github/hooks/scripts/pre-command-guard.sh"],
+        cwd=ROOT,
+        input="not-json",
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HOOK_LOG_DIR": str(ROOT / "tmp/test-hook-logs")},
+        check=True,
+    )
+    assert json.loads(result.stdout)["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git commit --no-verify -m x",
+        "git commit -m 'x\nCo-authored-by: Agent <agent@example.test>'",
+    ],
+)
+def test_guard_denies_commit_bypasses(command):
+    output = run_guard({"toolName": "run_in_terminal", "toolInput": {"command": command}})
+    assert output["hookSpecificOutput"]["permissionDecision"] == "deny"
+
+
+def test_guard_denies_unsentineled_feature_graph_write():
+    output = run_guard(
+        {
+            "toolName": "apply_patch",
+            "toolInput": {
+                "input": "*** Begin Patch\n*** Add File: features/demo/graph.yaml\n+x\n*** End Patch"
+            },
+        }
+    )
+    detail = output["hookSpecificOutput"]
+    assert detail["permissionDecision"] == "deny"
+    assert "scripts/author.sh" in detail["permissionDecisionReason"]
+
+
+def test_guard_allows_sentineled_feature_graph_write(tmp_path):
+    token = "abc123"
+    sentinel = tmp_path / "sentinel.json"
+    sentinel.write_text(json.dumps({"token": token}))
+    output = run_guard(
+        {
+            "toolName": "apply_patch",
+            "toolInput": {
+                "input": "*** Begin Patch\n*** Add File: features/demo/graph.yaml\n+x\n*** End Patch"
+            },
+        },
+        {
+            "YAMLGRAPH_AUTHORING_TOKEN": token,
+            "YAMLGRAPH_AUTHORING_SENTINEL": str(sentinel),
+        },
+    )
+    assert output.get("decision") == "approve"
+
+
+def test_guard_lockdown_round_trip(tmp_path):
+    env = {"HOOK_LOG_DIR": str(tmp_path)}
+    locked = run_guard(
+        {
+            "toolName": "run_in_terminal",
+            "toolInput": {"command": ".github/hooks/cmd lockdown"},
+        },
+        env,
+    )
+    assert locked["hookSpecificOutput"]["permissionDecision"] == "deny"
+    denied = run_guard(
+        {"toolName": "read_file", "toolInput": {"filePath": "README.md"}}, env
+    )
+    assert "LOCKDOWN ACTIVE" in denied["hookSpecificOutput"]["permissionDecisionReason"]
+    unlocked = run_guard(
+        {
+            "toolName": "run_in_terminal",
+            "toolInput": {"command": ".github/hooks/cmd unlock"},
+        },
+        env,
+    )
+    assert "Lockdown lifted" in unlocked["hookSpecificOutput"]["permissionDecisionReason"]
+    assert (tmp_path / "audit.jsonl").is_file()
+
+
+def test_yaml_post_edit_failure_surfaces(tmp_path):
+    prompt = tmp_path / "prompts" / "bad.yaml"
+    prompt.parent.mkdir()
+    prompt.write_text("system: [unterminated\n")
+    payload = {
+        "toolName": "apply_patch",
+        "toolInput": {
+            "input": f"*** Begin Patch\n*** Update File: {prompt}\n*** End Patch"
+        },
+    }
+    result = subprocess.run(
+        [".github/hooks/scripts/checks/yaml-checks.sh"],
+        cwd=ROOT,
+        input=json.dumps(payload),
+        capture_output=True,
+        text=True,
+        env={**os.environ, "HOOK_LOG_DIR": str(tmp_path / "logs")},
+        check=True,
+    )
+    output = json.loads(result.stdout)
+    assert "Prompt file error" in output["systemMessage"]
 
 
 def test_verifier_accepts_committed_bundle():
