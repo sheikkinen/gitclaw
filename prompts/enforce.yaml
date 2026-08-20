@@ -17,6 +17,7 @@ user: |
   Required generated feature shape:
   - features/{feature_name}/graph.yaml
   - features/{feature_name}/prompts/*.yaml
+  - optional features/{feature_name}/composition.json when frozen by the FR.
   - optional contained tools and tests permitted by the shared policy.
   - single or few LLM nodes.
   - Input variable: date.
@@ -25,9 +26,19 @@ user: |
   optional contained tools frozen by the FR and judgement. Do not add a
   capability forbidden by policy/generated-features.md.
 
+  For a judged composition feature, declare only the frozen dependency slugs,
+  accept source_snapshots as a string state variable, parse its bounded JSON
+  envelope structurally, and test partial and all-dependency failure with
+  synthetic envelopes. Do not import or read sibling features, copy adapters,
+  re-fetch dependency sources, or read prior outputs. The authoring smoke must
+  pass a synthetic source_snapshots value and must not execute dependencies.
+
   Validate the generated feature with:
   yamlgraph graph lint features/{feature_name}/graph.yaml
   yamlgraph graph run features/{feature_name}/graph.yaml --var date="2026-08-20" --full
+
+  For composition features, append a synthetic source_snapshots --var to the
+  graph run command.
 
   Write features/{feature_name}/authoring-report.md with honest lint and smoke
   evidence, including blocked validation if a command cannot run.

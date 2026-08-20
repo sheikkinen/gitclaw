@@ -23,6 +23,10 @@ user: |
     parsers, timeouts, and failure behavior are frozen in the FR.
   - Reject new-secret, authenticated, external-write, unbounded-data,
     out-of-feature, or other policy-forbidden requirements.
+  - Permit composition only through a strict composition.json naming frozen
+    dependencies and the fixed bounded source_snapshots envelope. Reject
+    sibling filesystem access, adapter copying, source re-fetching, stale
+    output reads, or platform interpretation of source candidates.
   - Gaps in YAMLGraph core or gitclaw workflow machinery belong in a separate
     feature request, not inline implementation scope.
 

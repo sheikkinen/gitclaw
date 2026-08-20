@@ -63,3 +63,24 @@ def test_stages_state_distinct_policy_responsibilities():
 def test_judge_and_enforce_do_not_exclude_tools():
     text = read(PROMPTS["judge"]) + read(PROMPTS["enforce"])
     assert not any(banned in text for banned in BANNED_TOOL_EXCLUSIONS)
+
+
+def test_policy_defines_composition_as_the_only_cross_feature_channel():
+    policy = " ".join(read(POLICY_PATH).lower().split())
+    required = (
+        "composition.json",
+        "source_snapshots",
+        "partial and all-dependency failure",
+        "only cross-feature channel",
+        "must not import or read another feature directory",
+        "inspect prior `outputs/`",
+    )
+    assert all(marker in policy for marker in required)
+
+
+def test_all_stages_apply_composition_boundary():
+    for prompt in PROMPTS.values():
+        text = read(prompt)
+        assert "composition" in text.lower()
+        assert "source_snapshots" in text
+        assert "sibling" in text.lower()

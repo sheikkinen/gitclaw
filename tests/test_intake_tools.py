@@ -4,7 +4,10 @@ from tools import cron_run, ledger, slug
 
 
 def test_slug_kebab():
-    assert slug.make("Daily haiku about the weather in Oulu") == "daily-haiku-about-the-weather-in-oulu"
+    assert (
+        slug.make("Daily haiku about the weather in Oulu")
+        == "daily-haiku-about-the-weather-in-oulu"
+    )
 
 
 def test_slug_strips_injection_chars():
@@ -35,13 +38,14 @@ def test_slug_unique_collision_stays_bounded(tmp_path):
 
 def test_run_feature_timeout_recorded(tmp_path, monkeypatch):
     # a hung feature must be recorded as failed, not crash the loop
-    import subprocess
-
-    def hang(*a, **kw):
-        raise subprocess.TimeoutExpired(cmd="yamlgraph", timeout=600)
-
-    monkeypatch.setattr(cron_run.subprocess, "run", hang)
-    ok, reason = cron_run.run_feature(tmp_path / "features" / "slow" / "graph.yaml", "2026-08-20")
+    monkeypatch.setattr(
+        cron_run,
+        "_run_bounded",
+        lambda command, timeout=600: (None, b"", b"", "timeout after 600s"),
+    )
+    ok, reason = cron_run.run_feature(
+        tmp_path / "features" / "slow" / "graph.yaml", "2026-08-20"
+    )
     assert ok is False and "timeout" in reason
 
 
@@ -69,7 +73,10 @@ def test_extract_output_fallback_single_output_key():
     # generated graphs pick their own state_key (issue #3: 'aphorism'
     # inside dir daily-aphorism-about-software-craft)
     state = {"date": "2026-08-20", "aphorism": {"aphorism": "build less"}}
-    assert cron_run.extract_output(state, "daily-aphorism-about-software-craft") == "build less"
+    assert (
+        cron_run.extract_output(state, "daily-aphorism-about-software-craft")
+        == "build less"
+    )
 
 
 def test_extract_output_ambiguous_fails_closed():

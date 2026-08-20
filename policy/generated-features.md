@@ -19,6 +19,32 @@ documentation entirely below the feature directory. They may use the Python
 standard library or dependencies already installed by the unmodified gitclaw
 cron runtime. They may read bounded files committed inside the same feature.
 
+## Declared Composition
+
+A feature may compose same-run outputs only by committing a strict
+`composition.json` in its own directory. The manifest has schema version `1`
+and a non-empty ordered `dependencies` list of unique canonical feature slugs.
+The cron runner validates missing dependencies, self-dependencies, and cycles,
+runs dependencies first, and supplies direct dependency results through the
+fixed `source_snapshots: str` graph input.
+
+`source_snapshots` is a bounded JSON envelope. Each entry names one declared
+feature and has status `succeeded` with its unchanged opaque candidate, or
+status `failed` with a bounded reason. Composers must handle partial and
+all-dependency failure explicitly. They must use synthetic envelopes in tests
+and authoring smoke runs.
+
+The manifest must be a non-symlink regular file no larger than 16 KiB. Each
+candidate is limited to 32 KiB of UTF-8 and the complete envelope to 96 KiB so
+it remains deliverable as one Linux command argument. Cron bounds graph stdout
+and stderr while the child runs; timeout, output-limit, and process-spawn
+failures become explicit feature failures without starving unrelated work.
+
+The envelope is the only cross-feature channel. A generated feature must not
+import or read another feature directory, copy another adapter, re-fetch a
+dependency's source, inspect prior `outputs/`, or ask the platform to parse,
+merge, summarize, relabel, or repair source facts.
+
 ## Read-Only Public Retrieval
 
 Tools may make unauthenticated HTTP `GET` or `HEAD` requests only to public
@@ -45,6 +71,8 @@ Issue-generated features:
 - must not modify workflows, dependencies, gitclaw runtime or policy,
   repository state, or paths outside their own feature directory during
   generation;
+- must not access sibling feature files or prior output files as composition
+  input; and
 - must not persist credentials, personal profiles, private or local-device
   data, or unbounded raw response bodies.
 

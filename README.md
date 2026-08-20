@@ -81,13 +81,35 @@ issue → ledger(seen) → plan → judge ──REJECTED──→ comment + clos
 - **Idempotency**: re-delivered events skip terminal issues (exit 78);
   interrupted non-terminal issues demand human recovery (exit 65).
 
+## Composition
+
+Generated features remain isolated ownership units; their directories are not
+shared libraries. A composer declares exact dependencies in its contained
+`composition.json`. Cron validates the dependency graph, runs each dependency
+at most once, and passes direct same-run results through a bounded
+`source_snapshots` JSON string. Successful entries carry unchanged candidate
+text; failed entries carry a bounded reason. Composers still run on partial or
+all-dependency failure so they can report health explicitly.
+
+Manifests are regular contained files capped at 16 KiB. Candidates are capped
+at 32 KiB of UTF-8 and the envelope at 96 KiB, below Linux's per-argument
+ceiling. Cron terminates a graph that exceeds its bounded stdout/stderr or
+timeout and records process-spawn failures per feature.
+
+No generated feature may import or read a sibling feature, copy its adapter,
+re-fetch its source, or use prior `outputs/` as input. Invalid manifests and
+cycles fail the affected features and their dependents while unrelated valid
+features continue. The platform schedules and transports results; it does not
+interpret, merge, or repair source facts.
+
 ## Layout
 
 ```
 gitclaw.yaml            orchestrator graph (YAMLGraph)
 prompts/                plan / judge / enforce / review contracts
 features/<name>/        FR.md, judgement.md, review.md,
-                        authoring-report.md, graph.yaml, prompts/
+                        authoring-report.md, graph.yaml, prompts/,
+                        optional composition.json
 tools/                  ledger, containment, slug, cron runner
 scripts/author-report.sh  mechanical artifact verifier
 state/issues.jsonl      append-only ledger

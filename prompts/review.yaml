@@ -22,5 +22,11 @@ user: |
   whether it satisfies the frozen scope, validation evidence, and shared
   network, credential, mutation, and data boundary.
 
+  For a composition feature, verify composition.json has only the frozen
+  dependency slugs, the graph accepts the fixed source_snapshots string, and
+  synthetic tests cover success plus partial and all-dependency failure.
+  Reject sibling filesystem access, adapter copying, source re-fetching, prior
+  output reads, or candidate interpretation outside the judged composer.
+
   After writing the review file, stdout may contain a short completion note,
   but it is not used for routing.
