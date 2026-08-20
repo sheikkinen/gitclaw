@@ -1,0 +1,116 @@
+version: "1.0"
+name: gitclaw-issue-to-feature
+description: Orchestrate issue-to-feature authoring with Copilot CLI nodes.
+
+prompts_relative: true
+prompts_dir: prompts
+
+state:
+  issue_number: str
+  issue_title: str
+  issue_body: str
+  feature_name: str
+
+nodes:
+  plan:
+    type: copilot
+    backend: cli
+    prompt: plan
+    cli_flags:
+      allow_all_paths: true
+      allow_all_tools: true
+    timeout: 900
+    variables:
+      issue_number: "{state.issue_number}"
+      issue_title: "{state.issue_title}"
+      issue_body: "{state.issue_body}"
+      feature_name: "{state.feature_name}"
+    state_key: plan_result
+
+  judge:
+    type: copilot
+    backend: cli
+    prompt: judge
+    cli_flags:
+      allow_all_paths: true
+      allow_all_tools: true
+    timeout: 900
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: judge_result
+
+  judge_gate:
+    type: passthrough
+    output:
+      judge_output: "{state.judge_result.output}"
+
+  enforce:
+    type: copilot
+    backend: cli
+    prompt: enforce
+    cli_flags:
+      allow_all_paths: true
+      allow_all_tools: true
+      resume: "{state.plan_result.session_id}"
+    timeout: 900
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: enforce_result
+    skip_if_exists: false
+
+  review:
+    type: copilot
+    backend: cli
+    prompt: review
+    cli_flags:
+      allow_all_paths: true
+      allow_all_tools: true
+    timeout: 900
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: review_result
+    skip_if_exists: false
+
+  review_gate:
+    type: passthrough
+    output:
+      review_output: "{state.review_result.output}"
+    skip_if_exists: false
+
+edges:
+  - from: START
+    to: plan
+  - from: plan
+    to: judge
+  - from: judge
+    to: judge_gate
+  - from: judge_gate
+    to: enforce
+    condition: "judge_output == 'VERDICT: APPROVED'"
+  - from: judge_gate
+    to: END
+    condition: "judge_output != 'VERDICT: APPROVED'"
+  - from: enforce
+    to: review
+  - from: review
+    to: review_gate
+  - from: review_gate
+    to: END
+    condition: "review_output == 'REVIEW: APPROVED'"
+  - from: review_gate
+    to: enforce
+    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce == null"
+  - from: review_gate
+    to: enforce
+    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce < 2"
+  - from: review_gate
+    to: END
+    condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce >= 2"
+  - from: review_gate
+    to: END
+    condition: "review_output != 'REVIEW: APPROVED' and review_output != 'REVIEW: REJECTED'"
+
+loop_limits:
+  enforce: 2
+  review: 2
+  review_gate: 2

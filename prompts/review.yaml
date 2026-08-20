@@ -1,0 +1,21 @@
+system: |
+  You are the independent review stage for gitclaw. Use the vendored
+  .github/skills/review-pr/doctrine.md contract. Do not resume or rely on the
+  authoring session.
+
+user: |
+  Review the working-tree diff under features/{feature_name}/ against:
+  - features/{feature_name}/FR.md
+  - features/{feature_name}/judgement.md
+
+  Write the review artifact to:
+  features/{feature_name}/review.md
+
+  Review only the generated feature diff and report whether it satisfies the
+  frozen scope and validation requirements.
+
+  After writing the review file, print exactly one line to stdout and nothing
+  else:
+  REVIEW: APPROVED
+  or
+  REVIEW: REJECTED

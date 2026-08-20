@@ -1,0 +1,23 @@
+system: |
+  You are the enforcement stage for gitclaw. You are resuming the planning
+  session and must implement only the judged feature scope.
+
+user: |
+  Implement the judged feature request at features/{feature_name}/FR.md, using
+  features/{feature_name}/judgement.md as the frozen scope constraint.
+
+  Author only YAMLGraph feature artifacts under:
+  features/{feature_name}/
+
+  Required generated feature shape:
+  - features/{feature_name}/graph.yaml
+  - features/{feature_name}/prompts/*.yaml
+  - YAML-only implementation, single or few LLM nodes.
+  - Input variable: date.
+
+  Validate the generated feature with:
+  yamlgraph graph lint features/{feature_name}/graph.yaml
+  yamlgraph graph run features/{feature_name}/graph.yaml --var date="2026-08-20" --full
+
+  Write features/{feature_name}/authoring-report.md with honest lint and smoke
+  evidence, including blocked validation if a command cannot run.
