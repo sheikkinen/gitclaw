@@ -140,6 +140,7 @@ scripts/author-report.sh  mechanical artifact verifier
 state/issues.jsonl      append-only ledger
 outputs/                daily cron outputs
 .github/skills/         vendored authoring/judging doctrine snapshot
+.github/copilot-instructions.md  restated invariants for every Copilot session
 ```
 
 ## Security & misuse warnings
