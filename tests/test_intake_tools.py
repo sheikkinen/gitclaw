@@ -92,6 +92,18 @@ def test_cron_main_exit_codes(tmp_path, monkeypatch):
     assert (tmp_path / "outputs" / "2026-08-20-poison.failed.json").exists()
 
 
+def test_cron_output_carries_attribution(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "features" / "good").mkdir(parents=True)
+    (tmp_path / "features" / "good" / "graph.yaml").touch()
+    monkeypatch.setattr(cron_run, "run_feature", lambda g, d: (True, "text"))
+    assert cron_run.main("2026-08-20") == 0
+    out = (tmp_path / "outputs" / "2026-08-20-good.md").read_text()
+    assert out.startswith("text\n")
+    assert "github.com/sheikkinen/gitclaw" in out
+    assert "github.com/sheikkinen/yamlgraph" in out
+
+
 def test_intake_gate_exit_codes(tmp_path):
     path = tmp_path / "issues.jsonl"
     assert ledger.gate_code(path, 5) == 0  # fresh: run
