@@ -39,7 +39,8 @@ def publish(report_path: Path, repository: str, issue: int) -> dict:
 
     operation = report["operation"]
     pr = report.get("pr")
-    if operation == "revise" and pr:
+    revision = report.get("revision", "")
+    if operation == "revise" and revision == "implementation" and pr:
         metadata = json.loads(
             _run(
                 "gh",
@@ -97,7 +98,12 @@ def publish(report_path: Path, repository: str, issue: int) -> dict:
             f"Generated from #{issue}; human merge required.",
             capture=True,
         )
-    body = f"gitclaw {operation} completed in `{commit}`."
+    if operation == "revise" and revision == "replan":
+        body = f"gitclaw replan-required artifacts committed in `{commit}`."
+    elif operation == "revise" and revision == "implementation":
+        body = f"gitclaw implementation revision pushed in `{commit}`; review required."
+    else:
+        body = f"gitclaw {operation} completed in `{commit}`."
     if pr_url:
         body += f" PR: {pr_url}"
     _run("gh", "issue", "comment", str(issue), "-R", repository, "--body", body)

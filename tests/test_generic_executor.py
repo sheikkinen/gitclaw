@@ -212,6 +212,7 @@ def test_revision_publisher_updates_existing_pr_branch(tmp_path, monkeypatch):
             {
                 "operation": "revise",
                 "pr": 7,
+                "revision": "implementation",
                 "paths": [{"path": "src/app.py", "sha256": digest}],
             }
         )
@@ -239,6 +240,45 @@ def test_revision_publisher_updates_existing_pr_branch(tmp_path, monkeypatch):
     assert result["branch"] == "implementation"
     assert ("git", "switch", "-C", "implementation") in calls
     assert not any(call[:3] == ("gh", "pr", "create") for call in calls)
+
+
+def test_replan_publisher_does_not_touch_existing_pr_branch(tmp_path, monkeypatch):
+    from tools import executor_publish
+
+    monkeypatch.chdir(tmp_path)
+    artifact = tmp_path / "feature-requests" / "FR-002.md"
+    artifact.parent.mkdir()
+    artifact.write_text("replanned\n")
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            {
+                "operation": "revise",
+                "pr": 7,
+                "revision": "replan",
+                "paths": [{"path": "feature-requests/FR-002.md", "sha256": digest}],
+            }
+        )
+    )
+    monkeypatch.setenv("GH_TOKEN", "canary")
+    calls = []
+
+    def fake_run(*args, capture=False):
+        calls.append(args)
+        if args[:3] == ("git", "rev-parse", "HEAD"):
+            return "d" * 40
+        if args[:3] == ("gh", "pr", "list"):
+            return ""
+        if args[:3] == ("gh", "pr", "create"):
+            return "https://github.com/owner/repo/pull/8"
+        return ""
+
+    monkeypatch.setattr(executor_publish, "_run", fake_run)
+    result = executor_publish.publish(report, "owner/repo", 3)
+    assert result["branch"] == "gitclaw/issue-3-revise"
+    assert not any(call[:3] == ("gh", "pr", "view") for call in calls)
+    assert any(call[:3] == ("gh", "pr", "create") for call in calls)
 
 
 def test_cron_runtime_is_byte_unchanged():
