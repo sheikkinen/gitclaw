@@ -34,6 +34,19 @@ and file validation are unchanged. Only governed path classes map from
 YAMLGraph examples/graphs to GitClaw feature paths. Audit/lockdown state moves
 to `tmp/hook-logs/` and is exercised by focused witnesses.
 
+## `.github/hooks/scripts/checks/yaml-checks.sh`
+
+**Changed lines:** added an explicit PyYAML availability check before parsing.
+
+**GitClaw assumption:** bootstrap test CI intentionally installs pytest only,
+while real adapter runs install YAMLGraph (and therefore PyYAML).
+
+**Original guarantee:** malformed graph/prompt YAML surfaces immediate feedback.
+
+**Preserved guarantee:** when PyYAML exists, parsing/lint behavior is unchanged;
+when absent, validation reports the missing parser instead of silently approving
+the edit.
+
 ## `scripts/control-bundle/verify.py`
 
 **Changed lines:** complete local CLI implementation derived from the artifact-

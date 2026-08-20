@@ -22,6 +22,11 @@ build_yaml_issues() {
     return 0
   fi
 
+  if ! python3 -c "import yaml" >/dev/null 2>&1; then
+    printf 'File: %s\n⚠ YAML parser unavailable: install yamlgraph/PyYAML before validating this edit.\n\n' "$file_path"
+    return 0
+  fi
+
   local is_graph
   is_graph=$(python3 -c "
 import sys

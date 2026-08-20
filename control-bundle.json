@@ -56,9 +56,9 @@
     {
       "source": ".github/hooks/scripts/checks/yaml-checks.sh",
       "target": ".github/hooks/scripts/checks/yaml-checks.sh",
-      "sha256": "5db96ed9decc2c2402ac5782b1430c8d75746b8a27420d74086244c7b2aafdcb",
+      "sha256": "9b59986517f70c42214f5c2ba2a2f545f74376661871d84231562bfd8c13db7f",
       "mode": "100755",
-      "disposition": "mirror"
+      "disposition": "adapt-local"
     },
     {
       "source": ".github/hooks/scripts/pre-command-guard.sh",

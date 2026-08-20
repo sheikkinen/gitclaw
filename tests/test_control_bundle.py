@@ -177,7 +177,10 @@ def test_yaml_post_edit_failure_surfaces(tmp_path):
         check=True,
     )
     output = json.loads(result.stdout)
-    assert "Prompt file error" in output["systemMessage"]
+    assert any(
+        marker in output["systemMessage"]
+        for marker in ("Prompt file error", "YAML parser unavailable")
+    )
 
 
 def test_verifier_accepts_committed_bundle():

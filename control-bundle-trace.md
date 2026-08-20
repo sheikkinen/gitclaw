@@ -39,7 +39,7 @@ not additional runtime paths.
 | `.github/hooks/scripts/pre-command-guard.sh` | adapt-local | Maps governed graph paths and runtime audit state to GitClaw |
 | `.github/hooks/scripts/checks/common.sh` | mirror | Shared hook payload parsing and result emission |
 | `.github/hooks/scripts/checks/python-checks.sh` | mirror | Applicable Python feedback |
-| `.github/hooks/scripts/checks/yaml-checks.sh` | mirror | YAML parsing and YAMLGraph graph lint |
+| `.github/hooks/scripts/checks/yaml-checks.sh` | adapt-local | YAML parsing/lint plus explicit missing-parser feedback for bootstrap CI |
 | `.github/hooks/scripts/checks/markdown-checks.sh` | mirror | Markdown whitespace feedback |
 | `.github/hooks/scripts/checks/fr-checks.sh` and prior-art helpers | not-runtime | YAMLGraph FR-board/registry policy is not present in GitClaw |
 | reasoning-pattern hook/config/data | not-runtime | Session-reasoning policy is outside the six FR-846 guarantees |
