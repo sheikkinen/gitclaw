@@ -22,6 +22,18 @@ accepted feature and commits its output.
 
    No PAT is needed for git/issue operations — the built-in
    `GITHUB_TOKEN` with `contents: write` / `issues: write` suffices.
+
+   Set/rotate the token without ever displaying it:
+
+   ```bash
+   gh auth token | gh secret set COPILOT_CLI_TOKEN -R <owner>/<repo>
+   printenv ANTHROPIC_API_KEY | gh secret set ANTHROPIC_API_KEY -R <owner>/<repo>
+   ```
+
+   `COPILOT_CLI_TOKEN` is an OAuth token that lives until revoked
+   (logout, `gh auth refresh`, password change, or ~1 year unused).
+   If pipelines start failing at the plan step, rotate it and probe
+   with `gh workflow run spike-copilot-cli.yml`.
 4. File an issue with a one-line feature wish. Watch the pipeline.
 5. Every morning (06:00 UTC), `cron.yml` runs all accepted features and
    commits their outputs to `outputs/`.
