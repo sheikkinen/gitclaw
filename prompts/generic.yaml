@@ -37,8 +37,11 @@ user: |
 
   Before interpreting the request artifact, verify that {request_path} exists
   and its SHA-256 equals {request_sha256}. If {reference_path} is non-empty,
-  verify that it exists and its SHA-256 equals {reference_sha256}. If
-  {expected_pr_head} is non-empty, confirm it matches {current_head}.
+  verify that it exists and its SHA-256 equals {reference_sha256}. Do not
+  compare expected_pr_head to current_head; they are different commits. For
+  review operations, if {expected_pr_head} is non-empty, verify that the actual
+  PR head SHA recorded by tmp/draft-review.md equals {expected_pr_head} before
+  writing the durable review artifact.
 
   If verification fails, stop without editing files and report the failing
   check. If verification passes, process only the verified request artifact and
@@ -55,8 +58,9 @@ user: |
   - enforce: consume committed FR and judgement artifacts without editing them;
     follow TDD; invoke scripts/author.sh for graph or prompt changes; leave the
     implementation and evidence uncommitted.
-  - review: invoke scripts/review.sh against the named real PR and FR; copy
-    tmp/draft-review.md byte-for-byte to
+  - review: invoke scripts/review.sh against the named real PR and FR; verify
+    tmp/draft-review.md records PR head <expected_pr_head> as consumed from
+    GitHub; copy tmp/draft-review.md byte-for-byte to
     reviews/pr-<pr>-<expected_pr_head>.md.
   - revise: choose either a new versioned FR plus judgement with no
     implementation edits, or implementation-only edits with authority unchanged;

@@ -63,6 +63,9 @@ def test_generic_prompt_is_thin_and_stage_neutral():
     ):
         assert marker in prompt
     assert "{issue_body}" not in prompt
+    assert "matches {current_head}" not in prompt
+    normalized = " ".join(prompt.split())
+    assert "actual PR head SHA recorded by tmp/draft-review.md" in normalized
 
 
 def test_old_semantic_harness_is_absent():
