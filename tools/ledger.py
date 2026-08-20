@@ -84,6 +84,16 @@ def should_run(path: Path, issue: int) -> bool:
     return state is None or not is_terminal(state)
 
 
+def gate_code(path: Path, issue: int) -> int:
+    """Intake gate: 0 fresh, 78 terminal (idempotent skip), 65 interrupted."""
+    state = current(path, issue)
+    if state is None:
+        return 0
+    if is_terminal(state):
+        return 78
+    return 65
+
+
 def main(argv: list[str]) -> int:
     cmd, issue = argv[0], int(argv[1])
     if cmd == "record":
@@ -94,7 +104,7 @@ def main(argv: list[str]) -> int:
         print(current(LEDGER, issue) or "")
         return 0
     if cmd == "should-run":
-        return 0 if should_run(LEDGER, issue) else 78
+        return gate_code(LEDGER, issue)
     raise SystemExit(f"unknown command: {cmd}")
 
 
