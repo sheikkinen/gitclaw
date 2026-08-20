@@ -36,6 +36,21 @@ def test_extract_output_missing_returns_none():
     assert cron_run.extract_output({"date": "x", "errors": ["boom"]}, "haiku") is None
 
 
+def test_cron_main_exit_codes(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    for name in ("good", "poison"):
+        (tmp_path / "features" / name).mkdir(parents=True)
+        (tmp_path / "features" / name / "graph.yaml").touch()
+    monkeypatch.setattr(
+        cron_run,
+        "run_feature",
+        lambda g, d: (g.parent.name == "good", "text"),
+    )
+    assert cron_run.main("2026-08-20") == 1  # poison recorded, exit 1
+    assert (tmp_path / "outputs" / "2026-08-20-good.md").exists()
+    assert (tmp_path / "outputs" / "2026-08-20-poison.failed.json").exists()
+
+
 def test_intake_gate_exit_codes(tmp_path):
     path = tmp_path / "issues.jsonl"
     assert ledger.gate_code(path, 5) == 0  # fresh: run
