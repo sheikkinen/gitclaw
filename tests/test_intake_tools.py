@@ -227,12 +227,11 @@ def test_graph_keeps_three_verdicts_and_gates_push_on_exact_approved():
         not in graph
     )
     assert "condition: \"review_verdict == 'APPROVED'\"" in graph
-    # review revisions join the remediation lap; conditions stay flat because
-    # the yamlgraph condition parser rejects parenthesized grouping
+    # FR-843: exactly one remediation lap, flat conditions only
     for verdict in ("REJECTED", "APPROVED WITH REVISIONS"):
         assert f"review_verdict == '{verdict}' and _loop_counts.enforce == null" in graph
-        assert f"review_verdict == '{verdict}' and _loop_counts.enforce < 2" in graph
-        assert f"review_verdict == '{verdict}' and _loop_counts.enforce >= 2" in graph
+        assert f"review_verdict == '{verdict}' and _loop_counts.enforce >= 1" in graph
+        assert f"review_verdict == '{verdict}' and _loop_counts.enforce < 2" not in graph
     for line in graph.splitlines():
         if "condition:" in line:
             assert "(" not in line, line
@@ -241,6 +240,14 @@ def test_graph_keeps_three_verdicts_and_gates_push_on_exact_approved():
         "review_verdict != 'APPROVED' and review_verdict != 'REJECTED' "
         "and review_verdict != 'APPROVED WITH REVISIONS'" in graph
     )
+
+
+def test_all_copilot_nodes_pin_sonnet_model():
+    import yaml
+
+    nodes = yaml.safe_load((ROOT / "gitclaw.yaml").read_text())["nodes"]
+    for stage in ("plan", "judge", "enforce", "review"):
+        assert nodes[stage]["cli_flags"]["model"] == "claude-sonnet-5", stage
 
 
 def test_workflow_writes_request_before_graph_and_passes_only_hash():
@@ -317,10 +324,12 @@ def test_issue6_shaped_review_revisions_cannot_publish(tmp_path):
         text=True,
     ).stdout.strip()
     assert extracted == "APPROVED WITH REVISIONS"
-    for lap in (None, 0, 1):
-        targets = _review_targets(extracted, lap)
-        assert "ledger_reviewed_approved" not in targets
-        assert "ledger_reviewed_rejected" in targets
-    assert _review_targets(extracted, 2) == ["reject_final"]
+    # FR-843: remediation exactly once (enforce null/0 = no lap yet), then
+    # visible terminal; 0-guard is the W803 defensive cover
+    for verdict in (extracted, "REJECTED"):
+        assert _review_targets(verdict, None) == ["ledger_reviewed_rejected"]
+        assert _review_targets(verdict, 0) == ["ledger_reviewed_rejected"]
+        assert _review_targets(verdict, 1) == ["reject_final"]
+        assert _review_targets(verdict, 2) == ["reject_final"]
     assert _review_targets("APPROVED", None) == ["ledger_reviewed_approved"]
     assert _review_targets("GARBAGE VERDICT", None) == ["END"]

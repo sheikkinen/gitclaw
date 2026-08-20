@@ -79,6 +79,13 @@ issue → request.json (trusted workflow, hash-pinned)
   arguments, logs, or graph state. Judgement/review revisions may only
   clarify or tighten — contradicting the owner request is a rejection — and
   enforcement may not edit `request.json`, `FR.md`, or `judgement.md`.
+- **Convergence**: judgement revisions are controlling additive constraints
+  over frozen `FR.md` prose; review never blocks on unfolded prose. Exactly
+  one remediation lap is allowed — a second non-approved review posts the
+  review and closes the issue via final rejection.
+- **Model pin**: all four pipeline stages pin `claude-sonnet-5` via
+  `cli_flags.model` so verdict behavior is reproducible; forks whose Copilot
+  plan lacks that model change one value per node in `gitclaw.yaml`.
 
 - **Verdicts are read from artifacts** (`judgement.md` / `review.md`),
   never from LLM stdout tokens. Unparseable verdict = fail closed.

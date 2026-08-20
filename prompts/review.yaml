@@ -15,6 +15,12 @@ user: |
   Any owner requirement omitted, contradicted, or semantically revised is
   blocking even when FR.md and judgement.md agree with each other.
 
+  judgement.md's recorded revisions are controlling additive constraints
+  layered over frozen FR.md prose: evaluate the implementation against FR.md
+  as amended by those revisions. Unfolded pre-revision FR.md prose alone is
+  expected under the immutability rule and is not a defect and not a blocking
+  finding.
+
   Write the review artifact to:
   features/{feature_name}/review.md
 

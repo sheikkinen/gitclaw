@@ -26,6 +26,11 @@ user: |
   semantically rewrites an owner requirement in request.json makes the verdict
   REJECTED; do not rewrite the FR or the owner request.
 
+  Every revision must be implementable without editing
+  features/{feature_name}/request.json, features/{feature_name}/FR.md, or
+  features/{feature_name}/judgement.md. A finding that would require
+  rewriting FR.md prose is grounds for REJECTED, never a revision.
+
   Constraints for generated gitclaw features:
   - Require exactly one non-empty final output under state_key: candidate;
     reject arbitrary state values as inferred output.

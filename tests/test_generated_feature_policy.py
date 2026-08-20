@@ -128,3 +128,15 @@ def test_enforce_cannot_mutate_authority_and_consumes_review_findings():
         "review.md and treat its findings as additive implementation constraints"
         in normalized
     )
+
+
+def test_judge_revisions_must_be_implementable_without_authority_edits():
+    normalized = " ".join(read(PROMPTS["judge"]).split())
+    assert "implementable without editing" in normalized
+    assert "rewriting" in normalized or "rewrite" in normalized
+
+
+def test_review_treats_judgement_revisions_as_controlling_over_frozen_prose():
+    normalized = " ".join(read(PROMPTS["review"]).split())
+    assert "as amended by" in normalized
+    assert "not a defect" in normalized or "not a blocking finding" in normalized
