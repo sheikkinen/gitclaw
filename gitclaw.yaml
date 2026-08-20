@@ -11,7 +11,126 @@ state:
   issue_body: str
   feature_name: str
 
+tools:
+  ledger_seen_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} seen
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} seen"
+    description: "Record the seen ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  ledger_planned_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} planned
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} planned"
+    description: "Record the planned ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  ledger_judged_approved_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} judged_approved
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} judged_approved"
+    description: "Record the judged_approved ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  ledger_enforced_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} enforced
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} enforced"
+    description: "Record the enforced ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  ledger_reviewed_approved_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} reviewed_approved
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} reviewed_approved"
+    description: "Record the reviewed_approved ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  ledger_reviewed_rejected_commit:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} reviewed_rejected
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} reviewed_rejected"
+    description: "Record the reviewed_rejected ledger transition and commit state/issues.jsonl."
+    parse: text
+    timeout: 120
+
+  reject_judgement_close:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} judged_rejected
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} judged_rejected"
+      && gh issue comment {issue_number} --body-file features/{feature_name}/judgement.md
+      && gh issue close {issue_number}
+    description: "Record a rejected judgement, commit the ledger, post judgement.md, and close the issue."
+    parse: text
+    timeout: 120
+
+  reject_review_final_close:
+    type: shell
+    command: >-
+      python -m tools.ledger record {issue_number} reviewed_rejected
+      && python -m tools.ledger record {issue_number} reviewed_rejected_final
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} reviewed_rejected_final"
+      && gh issue comment {issue_number} --body-file features/{feature_name}/review.md
+      && gh issue close {issue_number}
+    description: "Record the final rejected review path, commit the ledger, post review.md, and close the issue."
+    parse: text
+    timeout: 120
+
+  contain_feature_diff:
+    type: shell
+    command: >-
+      python -m tools.contain {feature_name}
+    description: "Fail closed unless every changed path is inside the current feature allowlist."
+    parse: text
+    timeout: 120
+
+  push_feature_and_close:
+    type: shell
+    command: >-
+      git add features/{feature_name} state/issues.jsonl
+      && git commit -m "feat(gitclaw): #{issue_number} {feature_name}"
+      && git push
+      && python -m tools.ledger record {issue_number} pushed
+      && gh issue comment {issue_number} --body "Implemented in $(git rev-parse HEAD)"
+      && python -m tools.ledger record {issue_number} closed
+      && git add state/issues.jsonl
+      && git commit -m "gitclaw: #{issue_number} closed"
+      && gh issue close {issue_number}
+      && git push
+    description: "Commit and push the contained feature, record pushed and closed ledger transitions, comment, close, and push the ledger."
+    parse: text
+    timeout: 120
+
 nodes:
+  ledger_seen:
+    type: tool
+    tool: ledger_seen_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_seen_result
+    on_error: fail
+
   plan:
     type: copilot
     backend: cli
@@ -26,6 +145,14 @@ nodes:
       issue_body: "{state.issue_body}"
       feature_name: "{state.feature_name}"
     state_key: plan_result
+
+  ledger_planned:
+    type: tool
+    tool: ledger_planned_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_planned_result
+    on_error: fail
 
   judge:
     type: copilot
@@ -44,6 +171,23 @@ nodes:
     output:
       judge_output: "{state.judge_result.output}"
 
+  ledger_judged_approved:
+    type: tool
+    tool: ledger_judged_approved_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_judged_approved_result
+    on_error: fail
+
+  reject_close:
+    type: tool
+    tool: reject_judgement_close
+    variables:
+      issue_number: "{state.issue_number}"
+      feature_name: "{state.feature_name}"
+    state_key: reject_close_result
+    on_error: fail
+
   enforce:
     type: copilot
     backend: cli
@@ -57,6 +201,14 @@ nodes:
       feature_name: "{state.feature_name}"
     state_key: enforce_result
     skip_if_exists: false
+
+  ledger_enforced:
+    type: tool
+    tool: ledger_enforced_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_enforced_result
+    on_error: fail
 
   review:
     type: copilot
@@ -77,40 +229,104 @@ nodes:
       review_output: "{state.review_result.output}"
     skip_if_exists: false
 
+  ledger_reviewed_approved:
+    type: tool
+    tool: ledger_reviewed_approved_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_reviewed_approved_result
+    on_error: fail
+
+  ledger_reviewed_rejected:
+    type: tool
+    tool: ledger_reviewed_rejected_commit
+    variables:
+      issue_number: "{state.issue_number}"
+    state_key: ledger_reviewed_rejected_result
+    on_error: fail
+
+  reject_final:
+    type: tool
+    tool: reject_review_final_close
+    variables:
+      issue_number: "{state.issue_number}"
+      feature_name: "{state.feature_name}"
+    state_key: reject_final_result
+    on_error: fail
+
+  contain:
+    type: tool
+    tool: contain_feature_diff
+    variables:
+      feature_name: "{state.feature_name}"
+    state_key: contain_result
+    on_error: fail
+
+  push:
+    type: tool
+    tool: push_feature_and_close
+    variables:
+      issue_number: "{state.issue_number}"
+      feature_name: "{state.feature_name}"
+    state_key: push_result
+    on_error: fail
+
 edges:
   - from: START
+    to: ledger_seen
+  - from: ledger_seen
     to: plan
   - from: plan
+    to: ledger_planned
+  - from: ledger_planned
     to: judge
   - from: judge
     to: judge_gate
   - from: judge_gate
-    to: enforce
+    to: ledger_judged_approved
     condition: "judge_output == 'VERDICT: APPROVED'"
+  - from: ledger_judged_approved
+    to: enforce
   - from: judge_gate
-    to: END
+    to: reject_close
     condition: "judge_output != 'VERDICT: APPROVED'"
+  - from: reject_close
+    to: END
   - from: enforce
+    to: ledger_enforced
+  - from: ledger_enforced
     to: review
   - from: review
     to: review_gate
   - from: review_gate
-    to: END
+    to: ledger_reviewed_approved
     condition: "review_output == 'REVIEW: APPROVED'"
+  - from: ledger_reviewed_approved
+    to: contain
+  - from: contain
+    to: push
+  - from: push
+    to: END
   - from: review_gate
-    to: enforce
+    to: ledger_reviewed_rejected
     condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce == null"
   - from: review_gate
-    to: enforce
+    to: ledger_reviewed_rejected
     condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce < 2"
+  - from: ledger_reviewed_rejected
+    to: enforce
   - from: review_gate
-    to: END
+    to: reject_final
     condition: "review_output == 'REVIEW: REJECTED' and _loop_counts.enforce >= 2"
+  - from: reject_final
+    to: END
   - from: review_gate
     to: END
     condition: "review_output != 'REVIEW: APPROVED' and review_output != 'REVIEW: REJECTED'"
 
 loop_limits:
   enforce: 2
+  ledger_enforced: 2
+  ledger_reviewed_rejected: 1
   review: 2
   review_gate: 2
