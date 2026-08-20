@@ -1,5 +1,6 @@
 """Slug + cron extraction + intake gate exit codes — RED specs."""
 
+import re
 from pathlib import Path
 
 from tools import cron_run, ledger, slug
@@ -243,11 +244,16 @@ def test_graph_keeps_three_verdicts_and_gates_push_on_exact_approved():
 
 
 def test_all_copilot_nodes_pin_sonnet_model():
-    import yaml
-
-    nodes = yaml.safe_load((ROOT / "gitclaw.yaml").read_text())["nodes"]
+    graph = (ROOT / "gitclaw.yaml").read_text()
     for stage in ("plan", "judge", "enforce", "review"):
-        assert nodes[stage]["cli_flags"]["model"] == "claude-sonnet-5", stage
+        match = re.search(
+            rf"^  {stage}:\n(?P<body>(?: {{4,}}.*\n|\n)+?)(?=^  \w|\Z)",
+            graph,
+            re.MULTILINE,
+        )
+        assert match, stage
+        block = match.group("body")
+        assert "model: claude-sonnet-5" in block, stage
 
 
 def test_graph_verifies_reference_manifest_at_every_request_point():
