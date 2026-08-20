@@ -9,6 +9,7 @@ state:
   issue_number: str
   feature_name: str
   request_sha256: str
+  reference_sha256: str
 
 tools:
   ledger_seen_commit:
@@ -116,7 +117,8 @@ tools:
     type: shell
     command: >-
       python -m tools.request_contract verify {feature_name} {request_sha256}
-    description: "Fail closed unless features/<slug>/request.json matches the trusted hash exactly."
+      && python -m tools.reference_assets verify {feature_name} '{reference_sha256}'
+    description: "Fail closed unless request.json and any staged reference match their trusted hashes."
     parse: text
     timeout: 30
 
@@ -190,6 +192,7 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
       request_sha256: "{state.request_sha256}"
+      reference_sha256: "{state.reference_sha256}"
     state_key: request_verified_after_plan
     on_error: fail
 
@@ -220,6 +223,7 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
       request_sha256: "{state.request_sha256}"
+      reference_sha256: "{state.reference_sha256}"
     state_key: request_verified_after_judge
     on_error: fail
 
@@ -268,6 +272,7 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
       request_sha256: "{state.request_sha256}"
+      reference_sha256: "{state.reference_sha256}"
     state_key: request_verified_after_enforce
     on_error: fail
     skip_if_exists: false
@@ -300,6 +305,7 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
       request_sha256: "{state.request_sha256}"
+      reference_sha256: "{state.reference_sha256}"
     state_key: request_verified_after_review
     on_error: fail
     skip_if_exists: false

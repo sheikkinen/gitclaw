@@ -31,6 +31,11 @@ user: |
   features/{feature_name}/judgement.md. A finding that would require
   rewriting FR.md prose is grounds for REJECTED, never a revision.
 
+  If features/{feature_name}/reference/ exists, verify FR-versus-reference
+  consistency alongside the request-versus-FR check: preserved behaviors and
+  owner-narrowed deltas must be declared, and no reference capability
+  forbidden by the shared policy may be ported.
+
   Constraints for generated gitclaw features:
   - Require exactly one non-empty final output under state_key: candidate;
     reject arbitrary state values as inferred output.

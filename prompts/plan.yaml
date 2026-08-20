@@ -18,6 +18,15 @@ user: |
   flag any owner requirement it cannot satisfy rather than silently
   substituting different behavior.
 
+  If features/{feature_name}/reference/ exists, it holds owner-committed
+  reference implementation files staged by the trusted workflow (see
+  reference/manifest.json). Treat them as authoritative prior implementation:
+  derive and adapt from them rather than redesigning. The FR must declare
+  which observable reference behaviors are preserved and which the owner
+  request narrows or changes; silent divergence is a planning defect. A
+  reference using a capability forbidden by policy/generated-features.md must
+  be flagged and that capability rejected, not ported.
+
   If the request uses public retrieval, the FR must name its public origins,
   finite data and timeout bounds, structured parsers, failure semantics, and
   contained tools. Reject or defer any capability forbidden by

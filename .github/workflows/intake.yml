@@ -87,6 +87,18 @@ jobs:
           REQUEST_SHA256="$(python -m tools.request_contract write "$FEATURE" "${{ github.event.issue.number }}")"
           echo "REQUEST_SHA256=$REQUEST_SHA256" >> "$GITHUB_ENV"
 
+      - name: Reference assets
+        if: steps.gate.outputs.verdict == 'run'
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          SET_NAME="$(python -m tools.reference_assets select)"
+          REFERENCE_SHA256=""
+          if [ -n "$SET_NAME" ]; then
+            REFERENCE_SHA256="$(python -m tools.reference_assets stage "$FEATURE" "$SET_NAME")"
+          fi
+          echo "REFERENCE_SHA256=$REFERENCE_SHA256" >> "$GITHUB_ENV"
+
       - name: Run pipeline
         if: steps.gate.outputs.verdict == 'run'
         env:
@@ -98,4 +110,5 @@ jobs:
             --var issue_number="${{ github.event.issue.number }}" \
             --var feature_name="$FEATURE" \
             --var request_sha256="$REQUEST_SHA256" \
+            --var reference_sha256="$REFERENCE_SHA256" \
             --full

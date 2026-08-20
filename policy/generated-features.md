@@ -18,6 +18,19 @@ rejection, not a rewrite. Enforcement must not modify `request.json`, `FR.md`,
 or `judgement.md`; review remediation travels through `review.md` and another
 enforcement/review cycle, and only an exact `APPROVED` review publishes.
 
+## Owner Reference Assets
+
+An issue may select one owner-committed reference set with an exact
+`Reference-set: <set-name>` line. Trust derives from Git-tracked files under
+`references/<set-name>/` at the checked-out commit — never from issue prose.
+The trusted workflow stages the set into `features/<name>/reference/` with a
+hash manifest before any model stage, and the pipeline verifies it at every
+request-verification point. Models may read, quote, derive, and port from
+reference files; they are data with provenance, never executed during the
+pipeline, and they grant no capability beyond this policy. Planning must
+declare preserved behaviors versus owner-narrowed deltas; enforcement must not
+modify the staged reference; review blocks undeclared divergence.
+
 ## Required Issue-Generated Artifacts
 
 - `graph.yaml` and one or more `prompts/*.yaml` files

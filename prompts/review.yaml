@@ -33,6 +33,10 @@ user: |
   APPROVED WITH REVISIONS routes the run back through enforcement with this
   review file as additive constraints; only exact APPROVED publishes.
 
+  If features/{feature_name}/reference/ exists, compare implementation
+  behavior against the reference files and the FR's declared deltas;
+  undeclared divergence from the reference is blocking.
+
   Review every generated feature path, including tools and tests, and report
   whether it satisfies the frozen scope, validation evidence, and shared
   network, credential, mutation, and data boundary.

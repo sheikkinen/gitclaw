@@ -140,3 +140,23 @@ def test_review_treats_judgement_revisions_as_controlling_over_frozen_prose():
     normalized = " ".join(read(PROMPTS["review"]).split())
     assert "as amended by" in normalized
     assert "not a defect" in normalized or "not a blocking finding" in normalized
+
+
+def test_policy_binds_reference_assets_as_data_with_provenance():
+    policy = " ".join(read(POLICY_PATH).lower().split())
+    assert "reference" in policy
+    assert "never executed" in policy
+    assert "owner-committed" in policy
+
+
+def test_all_stages_carry_reference_duties():
+    markers = {
+        "plan": ("reference/", "declare"),
+        "judge": ("reference", "consistency"),
+        "enforce": ("adapt the reference", "must not modify"),
+        "review": ("reference", "undeclared divergence"),
+    }
+    for stage, needles in markers.items():
+        normalized = " ".join(read(PROMPTS[stage]).split())
+        for needle in needles:
+            assert needle.lower() in normalized.lower(), (stage, needle)

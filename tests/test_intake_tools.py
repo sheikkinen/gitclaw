@@ -250,6 +250,25 @@ def test_all_copilot_nodes_pin_sonnet_model():
         assert nodes[stage]["cli_flags"]["model"] == "claude-sonnet-5", stage
 
 
+def test_graph_verifies_reference_manifest_at_every_request_point():
+    graph = (ROOT / "gitclaw.yaml").read_text()
+    state_block = graph.split("state:")[1].split("tools:")[0]
+    assert "reference_sha256: str" in state_block
+    assert "reference_assets verify" in graph
+    # the shared verify tool covers request and reference at the same points
+    assert graph.count("request_contract verify") == graph.count(
+        "reference_assets verify"
+    )
+
+
+def test_workflow_stages_reference_before_graph_and_passes_only_hash():
+    workflow = (ROOT / ".github/workflows/intake.yml").read_text()
+    assert "reference_assets select" in workflow
+    assert "reference_assets stage" in workflow
+    assert workflow.index("reference_assets") < workflow.index("yamlgraph graph run")
+    assert 'reference_sha256="$REFERENCE_SHA256"' in workflow
+
+
 def test_workflow_writes_request_before_graph_and_passes_only_hash():
     workflow = (ROOT / ".github/workflows/intake.yml").read_text()
     assert "request_contract" in workflow

@@ -86,6 +86,14 @@ issue → request.json (trusted workflow, hash-pinned)
 - **Model pin**: all four pipeline stages pin `claude-sonnet-5` via
   `cli_flags.model` so verdict behavior is reproducible; forks whose Copilot
   plan lacks that model change one value per node in `gitclaw.yaml`.
+- **Reference assets**: an issue may add one exact `Reference-set: <name>`
+  line to adapt owner-committed files from `references/<name>/` (Git-tracked
+  at HEAD, ≤8 UTF-8 files, ≤256 KiB each, ≤1 MiB total, `manifest.json`
+  reserved). The workflow stages them into `features/<slug>/reference/` with
+  a hash manifest verified at every stage; models adapt but never execute
+  them. Issue prose still selects only — it grants nothing beyond the set
+  name. If a model refuses the adaptation, the fallback is operator-authored
+  code with gitclaw used for review only.
 
 - **Verdicts are read from artifacts** (`judgement.md` / `review.md`),
   never from LLM stdout tokens. Unparseable verdict = fail closed.

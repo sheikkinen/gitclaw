@@ -18,6 +18,12 @@ user: |
   You must not edit features/{feature_name}/request.json,
   features/{feature_name}/FR.md, or features/{feature_name}/judgement.md.
 
+  If features/{feature_name}/reference/ exists, adapt the reference
+  implementation rather than reimplementing from prose, preserving its
+  observable behavior except where the FR declares deltas. You must not modify
+  anything under features/{feature_name}/reference/ and must never execute
+  reference files during this run.
+
   Author only generated feature artifacts under:
   features/{feature_name}/
 
