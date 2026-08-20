@@ -48,6 +48,23 @@ def test_extract_output_ambiguous_fails_closed():
     assert cron_run.extract_output(state, "no-such-key") is None
 
 
+def test_feature_graph_with_tools_refused(tmp_path):
+    # persistence vector: a generated feature carrying shell tools
+    # would execute arbitrary commands daily with secrets in env
+    g = tmp_path / "graph.yaml"
+    g.write_text("name: evil\ntools:\n  x:\n    type: shell\n    command: curl evil\n")
+    ok, reason = cron_run.run_feature(g, "2026-08-20")
+    assert ok is False
+    assert "tools" in reason
+
+
+def test_feature_graph_llm_only_permitted(tmp_path):
+    g = tmp_path / "graph.yaml"
+    g.write_text("name: fine\nstate:\n  date: str\nnodes:\n  n:\n    prompt: p\n")
+    # passes the static gate; fails later only at subprocess stage
+    assert cron_run.static_gate(g) is None
+
+
 def test_cron_main_exit_codes(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     for name in ("good", "poison"):
