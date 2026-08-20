@@ -11,10 +11,11 @@ import sys
 
 
 def _allowed(path: str, feature: str) -> bool:
+    path = path.rstrip("/")  # git reports untracked dirs with trailing slash
     norm = posixpath.normpath(path)
     if norm != path or path.startswith("/") or ".." in path.split("/"):
         return False
-    return norm == "state/issues.jsonl" or norm.startswith(f"features/{feature}/")
+    return norm == "state/issues.jsonl" or norm == f"features/{feature}" or norm.startswith(f"features/{feature}/")
 
 
 def violations(paths: list[str], feature: str) -> list[str]:

@@ -1,5 +1,0 @@
-{"event": "run", "run_id": "01a01ca9-7934-74f5-bbb4-375c1a49f96f", "artifact_hash": "sha256:98b7baaed8310801383e51dae82f87333d5e0de2806b7e3e334cac0cdbe2335e", "graph": "/Users/sheikki/Documents/src/gitclaw/features/horoscope/graph.yaml", "yamlgraph_version": "0.5.17", "thread_id": null, "started_at": "2026-08-20T00:54:23Z"}
-{"event": "run_end", "run_id": "01a01ca9-7934-74f5-bbb4-375c1a49f96f", "ended_at": "2026-08-20T00:54:28Z", "dropped_events": 0}
-{"event": "run", "run_id": "01a01caa-1cb8-7961-93f1-eb3e13355e22", "artifact_hash": "sha256:03e597a804b9f5a449191f5eeae448588e83e1851c1d2043db6852d6e63a52a7", "graph": "/Users/sheikki/Documents/src/gitclaw/gitclaw.yaml", "yamlgraph_version": "0.5.17", "thread_id": null, "started_at": "2026-08-20T00:55:05Z"}
-{"event": "route", "node": "judge_gate", "value": "judge_output != 'VERDICT: APPROVED'", "target": "reject_close", "thread_id": null, "ts": "2026-08-20T00:58:28Z"}
-{"event": "run_end", "run_id": "01a01caa-1cb8-7961-93f1-eb3e13355e22", "ended_at": "2026-08-20T00:58:30Z", "dropped_events": 0}
