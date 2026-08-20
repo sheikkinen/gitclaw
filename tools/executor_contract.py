@@ -98,7 +98,18 @@ def changed_paths() -> list[str]:
             paths.extend(value.split(" -> ", 1))
         else:
             paths.append(value)
-    return sorted(set(paths))
+    expanded = []
+    for value in paths:
+        path = Path(value.rstrip("/"))
+        if path.is_dir():
+            expanded.extend(
+                child.as_posix()
+                for child in path.rglob("*")
+                if child.is_file() and not child.is_symlink()
+            )
+        else:
+            expanded.append(path.as_posix())
+    return sorted(set(expanded))
 
 
 def _sha256(path: Path) -> str:

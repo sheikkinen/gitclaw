@@ -173,6 +173,23 @@ def test_publisher_rechecks_report_hashes_before_side_effects(tmp_path, monkeypa
         publish(report, "owner/repo", 1)
 
 
+def test_changed_paths_expands_untracked_directories(tmp_path, monkeypatch):
+    from tools.executor_contract import changed_paths
+
+    monkeypatch.chdir(tmp_path)
+    subprocess = __import__("subprocess")
+    subprocess.run(["git", "init"], check=True, capture_output=True)
+    directory = tmp_path / "features" / "greeting"
+    directory.mkdir(parents=True)
+    (directory / "graph.yaml").write_text("version: 1\n")
+    (directory / "prompts").mkdir()
+    (directory / "prompts" / "greeting.yaml").write_text("system: hi\n")
+    assert changed_paths() == [
+        "features/greeting/graph.yaml",
+        "features/greeting/prompts/greeting.yaml",
+    ]
+
+
 def test_cron_runtime_is_byte_unchanged():
     for relative, expected in CRON_HASHES.items():
         assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected
