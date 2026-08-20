@@ -83,6 +83,53 @@ outputs/                daily cron outputs
 .github/skills/         vendored authoring/judging doctrine snapshot
 ```
 
+## Security & misuse warnings
+
+Read this before forking. gitclaw hands an LLM agent shell access on
+a CI runner with secrets in the environment. The design assumes a
+**single trusted operator**; it is not hardened for adversarial
+multi-user operation.
+
+**What the gates do and do not protect:**
+
+- The intake trust gate keeps *untrusted people* from triggering the
+  LLM. It does nothing about *untrusted content* a trusted person
+  pastes into an issue (indirect prompt injection). Don't paste text
+  from unknown sources into gitclaw issues.
+- The pipeline's copilot sessions run with `allow_all_tools` — full
+  shell on the runner. Secrets (`COPILOT_CLI_TOKEN`,
+  `ANTHROPIC_API_KEY`, `GITHUB_TOKEN`) are in the process
+  environment. The diff-containment gate constrains what gets
+  *committed by the happy path*; it is advisory against a genuinely
+  malicious model, which could exfiltrate env vars or push directly
+  mid-session. Your protection there is model-vendor alignment plus
+  the trust gate — treat it as such.
+- `GITHUB_TOKEN` cannot modify `.github/workflows/**` (GitHub blocks
+  this for Actions tokens) — workflow self-modification is refused at
+  the platform layer.
+- The cron runner refuses feature graphs that declare a `tools:`
+  section (LLM-only graphs execute daily) — a generated feature
+  cannot install a persistent shell payload via cron.
+
+**Sharp edges for adopters:**
+
+- `COPILOT_CLI_TOKEN` is typically a full user OAuth token — broader
+  than this repo needs. Prefer a dedicated machine account or a
+  fine-grained token; rotate it if a run ever looks off.
+- Cost: every trusted issue burns Copilot and Anthropic quota; every
+  fork's cron burns it daily, forever, until you disable the
+  workflow. There is no budget cap — set provider spend limits.
+- Unpinned supply chain: `pip install yamlgraph` and
+  `npm install -g @github/copilot` install latest at run time. Pin
+  versions in the workflows if you need reproducibility over
+  freshness.
+- Generated content ships unreviewed by humans: the judge and
+  reviewer are LLMs. You are the publisher of whatever your copy
+  commits. Machine output may be wrong, derivative, or embarrassing —
+  the LICENSE disclaims warranty, not your accountability.
+- Do not point gitclaw at a repo containing anything you would not
+  hand to an LLM with shell access.
+
 ## Limitations
 
 - Copilot CLI must authenticate via `COPILOT_GITHUB_TOKEN`; there is no
