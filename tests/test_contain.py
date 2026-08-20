@@ -1,61 +1,29 @@
-"""Diff containment gate (FR-827 R-4) — RED spec. Fail closed."""
-
-import pytest
+"""Operation-aware generic executor containment."""
 
 from tools import contain
 
 
-ALLOW_OK = [
-    "features/haiku/graph.yaml",
-    "features/haiku/prompts/haiku.yaml",
-    "features/haiku/tools/fetch.py",
-    "features/haiku/tests/test_fetch.py",
-    "features/haiku/FR.md",
-    "features/haiku/judgement.md",
-    "features/haiku/review.md",
-    "features/haiku/authoring-report.md",
-    "state/issues.jsonl",
-]
-
-DENY = [
-    ".github/workflows/intake.yml",
-    ".github/workflows/evil.yml",
-    ".github/skills/judge-fr/doctrine.md",
-    "policy/generated-features.md",
-    "gitclaw.yaml",
-    "prompts/plan.yaml",
-    "tools/ledger.py",
-    "tools/contain.py",
-    "requirements.txt",
-    "package.json",
-    "README.md",
-    "features/other-feature/graph.yaml",
-    "outputs/2026-08-20-haiku.md",
-    ".git/hooks/pre-commit",
-]
+def test_plan_and_review_allow_exact_artifacts_only():
+    expected = {"feature-requests/FR-001.md", "feature-requests/FR-001.judgement.md"}
+    assert contain.violations(sorted(expected), "plan", expected) == []
+    assert contain.violations(["src/app.py"], "plan", expected) == ["src/app.py"]
 
 
-def test_allowlist_paths_pass():
-    assert contain.violations(ALLOW_OK, "haiku") == []
+def test_enforce_blocks_authority_and_platform_but_allows_project_code():
+    paths = [
+        "src/app.py",
+        "tests/test_app.py",
+        "feature-requests/FR-001.md",
+        "features/x/request.json",
+        ".github/workflows/evil.yml",
+        "tools/evil.py",
+        "gitclaw.yaml",
+    ]
+    assert contain.violations(paths, "enforce") == paths[2:]
 
 
-@pytest.mark.parametrize("path", DENY)
-def test_out_of_allowlist_fails_closed(path):
-    assert contain.violations([path], "haiku") == [path]
-
-
-def test_mixed_diff_reports_only_violations():
-    paths = ALLOW_OK + [".github/workflows/evil.yml"]
-    assert contain.violations(paths, "haiku") == [".github/workflows/evil.yml"]
-
-
-def test_traversal_rejected():
-    assert contain.violations(["features/haiku/../../.github/x.yml"], "haiku")
-    assert contain.violations(["features/haiku/./../evil.py"], "haiku")
-
-
-def test_untracked_dir_trailing_slash_allowed():
-    """git status reports untracked dirs as 'features/haiku/'."""
-    assert contain.violations(["features/haiku/"], "haiku") == []
-    assert contain.violations(["features/other/"], "haiku") == ["features/other/"]
-    assert contain.violations([".github/"], "haiku") == [".github/"]
+def test_traversal_and_absolute_paths_fail():
+    assert contain.violations(["../outside", "/tmp/x"], "enforce") == [
+        "../outside",
+        "/tmp/x",
+    ]

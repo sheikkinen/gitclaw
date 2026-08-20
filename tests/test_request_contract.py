@@ -58,6 +58,11 @@ def test_write_round_trips_unicode_and_newlines(tmp_path):
     assert json.loads(artifact(tmp_path).read_text())["body"] == body
 
 
+def test_write_accepts_title_only_command(tmp_path):
+    write(tmp_path, body="")
+    assert json.loads(artifact(tmp_path).read_text())["body"] == ""
+
+
 @pytest.mark.parametrize(
     "overrides",
     [
@@ -71,7 +76,6 @@ def test_write_round_trips_unicode_and_newlines(tmp_path):
         {"issue_number": -3},
         {"title": ""},
         {"title": "x" * 257},
-        {"body": ""},
         {"body": "x" * (1024 * 1024 + 1)},
         {"title": "nul\x00byte"},
         {"body": "nul\x00byte"},

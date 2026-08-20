@@ -2,32 +2,32 @@ name: intake
 
 on:
   issues:
-    types: [opened, labeled]
+    types: [opened, edited, labeled]
 
-# single-writer ledger: serialize intake runs
 concurrency:
-  group: gitclaw-intake
+  group: gitclaw-intake-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
-  pipeline:
-    # Trust gate (FR-827 AC-05): sole barrier between anon input and
-    # LLM + secrets. Never CONTRIBUTOR; on 'labeled' verify the SENDER
-    # (issue forms can auto-apply labels).
+  execute:
     if: >-
-      (github.event.action == 'opened' &&
+      ((github.event.action == 'opened' || github.event.action == 'edited') &&
        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
       (github.event.action == 'labeled' &&
        github.event.label.name == 'gitclaw' &&
        github.event.sender.login == github.repository_owner)
     runs-on: ubuntu-latest
-    env:
-      GITCLAW_REPOSITORY: ${{ github.repository }}
     permissions:
       contents: write
       issues: write
+      pull-requests: write
+    env:
+      GITCLAW_REPOSITORY: ${{ github.repository }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -40,75 +40,94 @@ jobs:
       - name: Install runtime
         run: |
           npm install -g @github/copilot
-          pip install yamlgraph
+          pip install yamlgraph pytest
 
-      # git identity BEFORE the run: ledger transitions commit mid-pipeline
-      - name: Git identity
-        run: |
-          git config user.name "gitclaw-bot"
-          git config user.email "actions@github.com"
+      - name: Verify control bundle
+        run: python -m tools.control_bundle
 
-      - name: Idempotency gate
-        id: gate
-        run: |
-          set +e
-          python -m tools.ledger should-run "${{ github.event.issue.number }}"
-          code=$?
-          set -e
-          case $code in
-            0)  echo "verdict=run" >> "$GITHUB_OUTPUT" ;;
-            78) echo "verdict=skip-terminal" >> "$GITHUB_OUTPUT" ;;
-            65) echo "verdict=skip-interrupted" >> "$GITHUB_OUTPUT" ;;
-            *)  exit "$code" ;;
-          esac
-
-      - name: Report interrupted state
-        if: steps.gate.outputs.verdict == 'skip-interrupted'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh issue comment "${{ github.event.issue.number }}" \
-            --body "gitclaw: pipeline previously interrupted mid-run (non-terminal ledger state). Human recovery required — see state/issues.jsonl."
-          exit 1
-
-      - name: Feature slug
-        if: steps.gate.outputs.verdict == 'run'
+      - name: Classify exact command
+        id: command
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
-        run: echo "FEATURE=$(python -m tools.slug "$ISSUE_TITLE" "${{ github.event.issue.number }}")" >> "$GITHUB_ENV"
+        run: python -m tools.executor_contract classify >> "$GITHUB_OUTPUT"
 
       - name: Immutable owner request
-        if: steps.gate.outputs.verdict == 'run'
         env:
-          # untrusted event text enters ONLY via env, never inline in scripts
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
+          FEATURE="issue-${{ github.event.issue.number }}-${{ github.run_id }}"
           REQUEST_SHA256="$(python -m tools.request_contract write "$FEATURE" "${{ github.event.issue.number }}")"
+          echo "FEATURE=$FEATURE" >> "$GITHUB_ENV"
+          echo "REQUEST_PATH=features/$FEATURE/request.json" >> "$GITHUB_ENV"
           echo "REQUEST_SHA256=$REQUEST_SHA256" >> "$GITHUB_ENV"
 
       - name: Reference assets
-        if: steps.gate.outputs.verdict == 'run'
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           SET_NAME="$(python -m tools.reference_assets select)"
           REFERENCE_SHA256=""
+          REFERENCE_PATH=""
           if [ -n "$SET_NAME" ]; then
             REFERENCE_SHA256="$(python -m tools.reference_assets stage "$FEATURE" "$SET_NAME")"
+            REFERENCE_PATH="features/$FEATURE/reference/manifest.json"
           fi
+          echo "REFERENCE_PATH=$REFERENCE_PATH" >> "$GITHUB_ENV"
           echo "REFERENCE_SHA256=$REFERENCE_SHA256" >> "$GITHUB_ENV"
 
-      - name: Run pipeline
-        if: steps.gate.outputs.verdict == 'run'
+      - name: Freeze input commit
+        run: |
+          git config user.name "gitclaw-bot"
+          git config user.email "actions@github.com"
+          git add "features/$FEATURE/request.json"
+          if [ -n "$REFERENCE_PATH" ]; then git add "features/$FEATURE/reference"; fi
+          git commit -m "chore(gitclaw): issue #${{ github.event.issue.number }} input"
+          echo "INPUT_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Resolve review head
         env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
+          EXPECTED_PR_HEAD=""
+          if [ "${{ steps.command.outputs.operation }}" = review ]; then
+            EXPECTED_PR_HEAD="$(gh pr view '${{ steps.command.outputs.pr }}' --json headRefOid -q .headRefOid)"
+          fi
+          echo "EXPECTED_PR_HEAD=$EXPECTED_PR_HEAD" >> "$GITHUB_ENV"
+
+      - name: Configure read-only adapter context
+        env:
+          # This credential must have Copilot access and no repository-write access.
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+        run: printf '%s' "$COPILOT_GITHUB_TOKEN" | gh auth login --with-token
+
+      - name: Run generic agent
+        env:
+          # Must be a dedicated Copilot credential with no repository-write access.
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
+        run: |
           yamlgraph graph run gitclaw.yaml \
-            --var issue_number="${{ github.event.issue.number }}" \
-            --var feature_name="$FEATURE" \
+            --var request_path="$REQUEST_PATH" \
             --var request_sha256="$REQUEST_SHA256" \
+            --var operation="${{ steps.command.outputs.operation }}" \
+            --var target="${{ steps.command.outputs.target }}" \
+            --var pr="${{ steps.command.outputs.pr }}" \
+            --var current_head="$INPUT_HEAD" \
+            --var reference_path="$REFERENCE_PATH" \
             --var reference_sha256="$REFERENCE_SHA256" \
+            --var expected_pr_head="$EXPECTED_PR_HEAD" \
             --full
+
+      - name: Verify generic executor artifacts
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: >-
+          python -m tools.executor_contract verify "$FEATURE" "$REQUEST_SHA256"
+          "$INPUT_HEAD" "$EXPECTED_PR_HEAD"
+
+      - name: Publish verified result
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          python -m tools.executor_publish tmp/execution-report.json
+          "${{ github.repository }}" "${{ github.event.issue.number }}"

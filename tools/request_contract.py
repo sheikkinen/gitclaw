@@ -47,8 +47,8 @@ def _validate_fields(
         _fail("repository must be owner/repository")
     if not title or len(title) > TITLE_MAX_CHARS:
         _fail(f"title must be 1..{TITLE_MAX_CHARS} characters")
-    if not body or len(body.encode("utf-8")) > BODY_MAX_BYTES:
-        _fail(f"body must be 1..{BODY_MAX_BYTES} UTF-8 bytes")
+    if len(body.encode("utf-8")) > BODY_MAX_BYTES:
+        _fail(f"body must be at most {BODY_MAX_BYTES} UTF-8 bytes")
     for name, value in (("title", title), ("body", body)):
         if "\x00" in value:
             _fail(f"{name} contains NUL")

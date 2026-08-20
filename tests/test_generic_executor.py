@@ -1,6 +1,7 @@
 """FR-845 generic skill executor contract."""
 
 import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -89,6 +90,87 @@ def test_revision_classification_is_exclusive():
         classify_revision(["feature-requests/FR-002.md", "src/app.py"])
     with pytest.raises(ExecutorContractError):
         classify_revision([])
+
+
+def test_plan_gate_requires_one_hash_linked_fr_and_judgement(tmp_path, monkeypatch):
+    from tools.executor_contract import ExecutorContractError, _plan
+
+    monkeypatch.chdir(tmp_path)
+    digest = "a" * 64
+    fr = tmp_path / "feature-requests" / "FR-001-greeting.md"
+    fr.parent.mkdir()
+    fr.write_text(
+        "# Feature Request: Greeting\n\n"
+        + "\n\n".join(
+            (
+                "## Summary\nGreeting",
+                "## Value Statement\nValue",
+                "## Problem\nMissing",
+                "## Ideal Result\nWorks",
+                "## Proposed Solution\nGraph",
+                "## Acceptance Criteria\n- [ ] Green",
+                "## Alternatives Considered\nNone",
+            )
+        )
+        + f"\n\nRequest SHA-256: `{digest}`\n"
+    )
+    judgement = tmp_path / "feature-requests" / "FR-001-greeting.judgement.md"
+    judgement.write_text("# Judgement\n\n**Verdict:** APPROVED\n")
+    assert _plan(
+        [fr.relative_to(tmp_path).as_posix(), judgement.relative_to(tmp_path).as_posix()],
+        digest,
+    ) == ["feature-requests/FR-001-greeting.md", "feature-requests/FR-001-greeting.judgement.md"]
+    judgement.unlink()
+    with pytest.raises(ExecutorContractError):
+        _plan(["feature-requests/FR-001-greeting.md"], digest)
+
+
+def test_enforce_gate_keeps_authority_immutable_and_requires_report(tmp_path, monkeypatch):
+    from tools.executor_contract import ExecutorContractError, _enforce
+
+    monkeypatch.chdir(tmp_path)
+    graph = tmp_path / "features" / "greeting" / "graph.yaml"
+    graph.parent.mkdir(parents=True)
+    graph.write_text("version: '1.0'\n")
+    with pytest.raises(ExecutorContractError):
+        _enforce(["features/greeting/graph.yaml"], "feature-requests/FR-001.md")
+    report = tmp_path / "tmp" / "draft-authoring-report.md"
+    report.parent.mkdir()
+    report.write_text("Artifacts Precedent Validation Repairs Blocked validation")
+    assert _enforce(["features/greeting/graph.yaml"], "feature-requests/FR-001.md")
+    with pytest.raises(ExecutorContractError):
+        _enforce(["feature-requests/FR-001.md"], "feature-requests/FR-001.md")
+
+
+def test_review_gate_is_head_linked_and_single_artifact(tmp_path, monkeypatch):
+    from tools.executor_contract import _review
+
+    monkeypatch.chdir(tmp_path)
+    head = "b" * 40
+    review = tmp_path / "reviews" / f"pr-12-{head}.md"
+    review.parent.mkdir()
+    review.write_text("**Merge verdict:** Not approved\n")
+    assert _review([review.relative_to(tmp_path).as_posix()], 12, head)
+
+
+def test_publisher_rechecks_report_hashes_before_side_effects(tmp_path, monkeypatch):
+    from tools.executor_publish import PublishError, publish
+
+    monkeypatch.chdir(tmp_path)
+    artifact = tmp_path / "artifact.md"
+    artifact.write_text("ok")
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            {
+                "operation": "plan",
+                "paths": [{"path": "artifact.md", "sha256": "0" * 64}],
+            }
+        )
+    )
+    monkeypatch.setenv("GH_TOKEN", "canary")
+    with pytest.raises(PublishError, match="changed"):
+        publish(report, "owner/repo", 1)
 
 
 def test_cron_runtime_is_byte_unchanged():

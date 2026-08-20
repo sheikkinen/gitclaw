@@ -1,52 +1,43 @@
-"""Diff containment gate (FR-827 R-4): allowlist-only, fail closed.
+"""Operation-aware write containment for the generic executor."""
 
-CLI: python -m tools.contain <feature_name>
-Checks every changed/untracked path from `git status --porcelain`;
-exits 1 listing violations if any path falls outside the allowlist.
-"""
+from __future__ import annotations
 
 import posixpath
-import subprocess
-import sys
 
 
-def _allowed(path: str, feature: str) -> bool:
-    path = path.rstrip("/")  # git reports untracked dirs with trailing slash
-    norm = posixpath.normpath(path)
-    if norm != path or path.startswith("/") or ".." in path.split("/"):
-        return False
-    return norm == "state/issues.jsonl" or norm == f"features/{feature}" or norm.startswith(f"features/{feature}/")
+PLATFORM_PREFIXES = (
+    ".github/",
+    "scripts/",
+    "tools/",
+    "prompts/",
+    "policy/",
+)
+PLATFORM_FILES = {"gitclaw.yaml", "control-bundle.json", "control-bundle-trace.md"}
 
 
-def violations(paths: list[str], feature: str) -> list[str]:
-    return [p for p in paths if not _allowed(p, feature)]
+def normalized(path: str) -> str:
+    value = path.rstrip("/")
+    norm = posixpath.normpath(value)
+    if not value or norm != value or value.startswith("/") or ".." in value.split("/"):
+        raise ValueError(f"unsafe path: {path}")
+    return norm
 
 
-def changed_paths() -> list[str]:
-    out = subprocess.run(
-        ["git", "status", "--porcelain"], capture_output=True, text=True, check=True
-    ).stdout
-    paths = []
-    for line in out.splitlines():
-        entry = line[3:]
-        if " -> " in entry:  # rename: check both sides
-            old, new = entry.split(" -> ", 1)
-            paths.extend([old, new])
-        else:
-            paths.append(entry)
-    return [p.strip('"') for p in paths]
-
-
-def main(feature: str) -> int:
-    bad = violations(changed_paths(), feature)
-    if bad:
-        print("containment gate FAILED — paths outside allowlist:", file=sys.stderr)
-        for p in bad:
-            print(f"  {p}", file=sys.stderr)
-        return 1
-    print("containment gate OK")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1]))
+def violations(paths: list[str], operation: str, expected: set[str] | None = None) -> list[str]:
+    bad = []
+    expected = expected or set()
+    for raw in paths:
+        try:
+            path = normalized(raw)
+        except ValueError:
+            bad.append(raw)
+            continue
+        if operation in {"plan", "review"}:
+            if path not in expected:
+                bad.append(raw)
+            continue
+        if path in PLATFORM_FILES or path.startswith(PLATFORM_PREFIXES):
+            bad.append(raw)
+        elif path.endswith("/request.json") or path.startswith("feature-requests/"):
+            bad.append(raw)
+    return bad
