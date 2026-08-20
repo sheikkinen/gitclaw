@@ -6,3 +6,5 @@
 {"issue": 2, "state": "judged_approved", "ts": "2026-08-20T01:05:26Z"}
 {"issue": 2, "state": "enforced", "ts": "2026-08-20T01:07:08Z"}
 {"issue": 2, "state": "reviewed_approved", "ts": "2026-08-20T01:08:57Z"}
+{"issue": 2, "state": "pushed", "ts": "2026-08-20T01:16:58Z"}
+{"issue": 2, "state": "closed", "ts": "2026-08-20T01:17:00Z"}
