@@ -36,6 +36,18 @@ def test_extract_output_missing_returns_none():
     assert cron_run.extract_output({"date": "x", "errors": ["boom"]}, "haiku") is None
 
 
+def test_extract_output_fallback_single_output_key():
+    # generated graphs pick their own state_key (issue #3: 'aphorism'
+    # inside dir daily-aphorism-about-software-craft)
+    state = {"date": "2026-08-20", "aphorism": {"aphorism": "build less"}}
+    assert cron_run.extract_output(state, "daily-aphorism-about-software-craft") == "build less"
+
+
+def test_extract_output_ambiguous_fails_closed():
+    state = {"date": "x", "a": {"a": "one"}, "b": {"b": "two"}}
+    assert cron_run.extract_output(state, "no-such-key") is None
+
+
 def test_cron_main_exit_codes(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     for name in ("good", "poison"):
