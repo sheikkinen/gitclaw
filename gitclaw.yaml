@@ -7,9 +7,8 @@ prompts_dir: prompts
 
 state:
   issue_number: str
-  issue_title: str
-  issue_body: str
   feature_name: str
+  request_sha256: str
 
 tools:
   ledger_seen_commit:
@@ -113,6 +112,14 @@ tools:
     parse: text
     timeout: 120
 
+  verify_request:
+    type: shell
+    command: >-
+      python -m tools.request_contract verify {feature_name} {request_sha256}
+    description: "Fail closed unless features/<slug>/request.json matches the trusted hash exactly."
+    parse: text
+    timeout: 30
+
   read_judgement_file_decision:
     type: shell
     command: >-
@@ -173,10 +180,17 @@ nodes:
     timeout: 900
     variables:
       issue_number: "{state.issue_number}"
-      issue_title: "{state.issue_title}"
-      issue_body: "{state.issue_body}"
       feature_name: "{state.feature_name}"
     state_key: plan_result
+
+  verify_request_after_plan:
+    type: tool
+    tool: verify_request
+    variables:
+      feature_name: "{state.feature_name}"
+      request_sha256: "{state.request_sha256}"
+    state_key: request_verified_after_plan
+    on_error: fail
 
   ledger_planned:
     type: tool
@@ -197,6 +211,15 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
     state_key: judge_result
+
+  verify_request_after_judge:
+    type: tool
+    tool: verify_request
+    variables:
+      feature_name: "{state.feature_name}"
+      request_sha256: "{state.request_sha256}"
+    state_key: request_verified_after_judge
+    on_error: fail
 
   read_judge_verdict:
     type: tool
@@ -236,6 +259,16 @@ nodes:
     state_key: enforce_result
     skip_if_exists: false
 
+  verify_request_after_enforce:
+    type: tool
+    tool: verify_request
+    variables:
+      feature_name: "{state.feature_name}"
+      request_sha256: "{state.request_sha256}"
+    state_key: request_verified_after_enforce
+    on_error: fail
+    skip_if_exists: false
+
   ledger_enforced:
     type: tool
     tool: ledger_enforced_commit
@@ -255,6 +288,16 @@ nodes:
     variables:
       feature_name: "{state.feature_name}"
     state_key: review_result
+    skip_if_exists: false
+
+  verify_request_after_review:
+    type: tool
+    tool: verify_request
+    variables:
+      feature_name: "{state.feature_name}"
+      request_sha256: "{state.request_sha256}"
+    state_key: request_verified_after_review
+    on_error: fail
     skip_if_exists: false
 
   read_review_verdict:
@@ -313,10 +356,14 @@ edges:
   - from: ledger_seen
     to: plan
   - from: plan
+    to: verify_request_after_plan
+  - from: verify_request_after_plan
     to: ledger_planned
   - from: ledger_planned
     to: judge
   - from: judge
+    to: verify_request_after_judge
+  - from: verify_request_after_judge
     to: read_judge_verdict
   - from: read_judge_verdict
     to: ledger_judged_approved
@@ -332,14 +379,18 @@ edges:
     to: END
     condition: "judge_verdict != 'APPROVED' and judge_verdict != 'APPROVED WITH REVISIONS' and judge_verdict != 'REJECTED'"
   - from: enforce
+    to: verify_request_after_enforce
+  - from: verify_request_after_enforce
     to: ledger_enforced
   - from: ledger_enforced
     to: review
   - from: review
+    to: verify_request_after_review
+  - from: verify_request_after_review
     to: read_review_verdict
   - from: read_review_verdict
     to: ledger_reviewed_approved
-    condition: "review_verdict == 'APPROVED' or review_verdict == 'APPROVED WITH REVISIONS'"
+    condition: "review_verdict == 'APPROVED'"
   - from: ledger_reviewed_approved
     to: contain
   - from: contain
@@ -348,24 +399,26 @@ edges:
     to: END
   - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce == null"
+    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce == null"
   - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce < 2"
+    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce < 2"
   - from: ledger_reviewed_rejected
     to: enforce
   - from: read_review_verdict
     to: reject_final
-    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce >= 2"
+    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce >= 2"
   - from: reject_final
     to: END
   - from: read_review_verdict
     to: END
-    condition: "review_verdict != 'APPROVED' and review_verdict != 'APPROVED WITH REVISIONS' and review_verdict != 'REJECTED'"
+    condition: "review_verdict != 'APPROVED' and review_verdict != 'REJECTED' and review_verdict != 'APPROVED WITH REVISIONS'"
 
 loop_limits:
   enforce: 2
+  verify_request_after_enforce: 2
   ledger_enforced: 2
   ledger_reviewed_rejected: 1
   review: 2
+  verify_request_after_review: 2
   read_review_verdict: 2

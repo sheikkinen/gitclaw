@@ -77,19 +77,25 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: echo "FEATURE=$(python -m tools.slug "$ISSUE_TITLE" "${{ github.event.issue.number }}")" >> "$GITHUB_ENV"
 
-      - name: Run pipeline
+      - name: Immutable owner request
         if: steps.gate.outputs.verdict == 'run'
         env:
           # untrusted event text enters ONLY via env, never inline in scripts
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          REQUEST_SHA256="$(python -m tools.request_contract write "$FEATURE" "${{ github.event.issue.number }}")"
+          echo "REQUEST_SHA256=$REQUEST_SHA256" >> "$GITHUB_ENV"
+
+      - name: Run pipeline
+        if: steps.gate.outputs.verdict == 'run'
+        env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_CLI_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GH_TOKEN: ${{ github.token }}
         run: |
           yamlgraph graph run gitclaw.yaml \
             --var issue_number="${{ github.event.issue.number }}" \
-            --var issue_title="$ISSUE_TITLE" \
-            --var issue_body="$ISSUE_BODY" \
             --var feature_name="$FEATURE" \
+            --var request_sha256="$REQUEST_SHA256" \
             --full

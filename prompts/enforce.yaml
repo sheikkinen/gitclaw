@@ -5,11 +5,18 @@ system: |
 
 user: |
   Implement the judged feature request at features/{feature_name}/FR.md, using
-  features/{feature_name}/judgement.md as the frozen scope constraint.
+  features/{feature_name}/judgement.md as the frozen scope constraint and
+  features/{feature_name}/request.json as the immutable owner request.
 
   If features/{feature_name}/judgement.md has verdict APPROVED WITH REVISIONS,
-  first fold every required revision into features/{feature_name}/FR.md, then
-  implement the folded feature request.
+  implement its recorded revisions as additive constraints on top of the
+  feature request. On a remediation lap entered after a review verdict of
+  APPROVED WITH REVISIONS or REJECTED, also read
+  features/{feature_name}/review.md and treat its findings as additive
+  implementation constraints, then the run returns to independent review.
+
+  You must not edit features/{feature_name}/request.json,
+  features/{feature_name}/FR.md, or features/{feature_name}/judgement.md.
 
   Author only generated feature artifacts under:
   features/{feature_name}/

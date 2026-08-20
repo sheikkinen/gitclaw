@@ -1,5 +1,7 @@
 """Slug + cron extraction + intake gate exit codes — RED specs."""
 
+from pathlib import Path
+
 from tools import cron_run, ledger, slug
 
 
@@ -197,3 +199,124 @@ def test_intake_gate_exit_codes(tmp_path):
     assert ledger.gate_code(path, repository, 5) == 65  # interrupted
     ledger.record(path, repository, 5, "judged_rejected")
     assert ledger.gate_code(path, repository, 5) == 78  # terminal skip
+
+
+ROOT = Path(__file__).parents[1]
+
+
+def test_graph_carries_request_hash_not_owner_text():
+    graph = (ROOT / "gitclaw.yaml").read_text()
+    state_block = graph.split("state:")[1].split("tools:")[0]
+    assert "request_sha256: str" in state_block
+    assert "issue_title" not in state_block
+    assert "issue_body" not in state_block
+    for stage in ("plan", "judge", "enforce", "review"):
+        assert f"from: {stage}\n    to: verify_request_after_{stage}" in graph
+
+
+def test_graph_keeps_three_verdicts_and_gates_push_on_exact_approved():
+    graph = (ROOT / "gitclaw.yaml").read_text()
+    # judge vocabulary unchanged
+    assert (
+        "judge_verdict == 'APPROVED' or judge_verdict == 'APPROVED WITH REVISIONS'"
+        in graph
+    )
+    # push gate is exact APPROVED only
+    assert (
+        "review_verdict == 'APPROVED' or review_verdict == 'APPROVED WITH REVISIONS'"
+        not in graph
+    )
+    assert "condition: \"review_verdict == 'APPROVED'\"" in graph
+    # review revisions join the remediation lap
+    assert (
+        "review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS'"
+        in graph
+    )
+    # unknown review verdicts still fail closed
+    assert (
+        "review_verdict != 'APPROVED' and review_verdict != 'REJECTED' "
+        "and review_verdict != 'APPROVED WITH REVISIONS'" in graph
+    )
+
+
+def test_workflow_writes_request_before_graph_and_passes_only_hash():
+    workflow = (ROOT / ".github/workflows/intake.yml").read_text()
+    assert "request_contract" in workflow
+    assert workflow.index("request_contract") < workflow.index("yamlgraph graph run")
+    assert 'request_sha256="$REQUEST_SHA256"' in workflow
+    assert "--var issue_title" not in workflow
+    assert "--var issue_body" not in workflow
+
+
+def test_workflow_never_inlines_owner_text_outside_env_blocks():
+    lines = (ROOT / ".github/workflows/intake.yml").read_text().splitlines()
+    for line in lines:
+        if "github.event.issue.title" in line or "github.event.issue.body" in line:
+            assert line.strip().startswith(("ISSUE_TITLE:", "ISSUE_BODY:")), line
+
+
+def test_remediation_lap_re_verifies_request():
+    limits = (ROOT / "gitclaw.yaml").read_text().split("loop_limits:")[1]
+    assert "verify_request_after_enforce: 2" in limits
+    assert "verify_request_after_review: 2" in limits
+
+
+def _review_targets(verdict, enforce_count):
+    import re
+    import types
+
+    graph = (ROOT / "gitclaw.yaml").read_text()
+    edges = re.findall(
+        r"- from: read_review_verdict\n"
+        r"    to: (\S+)(?:\n    condition: \"([^\"]+)\")?",
+        graph,
+    )
+    context = {
+        "review_verdict": verdict,
+        "_loop_counts": types.SimpleNamespace(enforce=enforce_count),
+    }
+    targets = []
+    for target, condition in edges:
+        if not condition:
+            targets.append(target)
+            continue
+        try:
+            if eval(condition.replace("null", "None"), {}, dict(context)):
+                targets.append(target)
+        except TypeError:
+            continue  # e.g. None < 2: edge not taken
+    return targets
+
+
+def test_issue6_shaped_review_revisions_cannot_publish(tmp_path):
+    # Issue-#6 shape: the owner request requires rejecting invalid input, a
+    # generated review blesses fallback success as APPROVED WITH REVISIONS.
+    # The artifact-extraction sed and the graph routing must send that run to
+    # remediation or final rejection, never to publication.
+    import subprocess
+
+    review = tmp_path / "review.md"
+    review.write_text(
+        "# Review\n\n"
+        "**Verdict:** APPROVED WITH REVISIONS - convert invalid\n"
+        "source_snapshots into a successful unavailable candidate instead of\n"
+        "rejecting, then publish.\n"
+    )
+    extracted = subprocess.run(
+        [
+            "/usr/bin/sed",
+            "-n",
+            r"s/^\*\*Verdict:\*\* \([A-Z][A-Z ]*[A-Z]\).*/\1/p",
+            str(review),
+        ],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    assert extracted == "APPROVED WITH REVISIONS"
+    for lap in (None, 0, 1):
+        targets = _review_targets(extracted, lap)
+        assert "ledger_reviewed_approved" not in targets
+        assert "ledger_reviewed_rejected" in targets
+    assert _review_targets(extracted, 2) == ["reject_final"]
+    assert _review_targets("APPROVED", None) == ["ledger_reviewed_approved"]
+    assert _review_targets("GARBAGE VERDICT", None) == ["END"]

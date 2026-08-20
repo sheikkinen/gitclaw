@@ -57,18 +57,28 @@ steps only via `env:` blocks, never inline `${{ }}` interpolation.
 ## Pipeline
 
 ```
-issue → ledger(seen) → plan → judge ──REJECTED──→ comment + close
+issue → request.json (trusted workflow, hash-pinned)
+      → ledger(seen) → plan → judge ──REJECTED──→ comment + close
                                 │
                      APPROVED / WITH REVISIONS
                                 ▼
                       enforce (resumes plan session)
                                 ▼
-                             review ──REJECTED──→ one remediation lap,
-                                │                 then final reject
-                            APPROVED
+                             review ──REJECTED / WITH REVISIONS──→ remediation lap
+                                │                                  (re-enforce + re-review,
+                                │                                   then final reject)
+                        APPROVED (exact)
                                 ▼
               containment gate → commit → comment → close
 ```
+
+- **Immutable owner request**: the workflow writes
+  `features/<name>/request.json` from the issue before any model stage and
+  passes only its SHA-256 into the graph; the exact bytes are re-verified
+  after plan, judge, enforce, and review. Owner text never enters shell
+  arguments, logs, or graph state. Judgement/review revisions may only
+  clarify or tighten — contradicting the owner request is a rejection — and
+  enforcement may not edit `request.json`, `FR.md`, or `judgement.md`.
 
 - **Verdicts are read from artifacts** (`judgement.md` / `review.md`),
   never from LLM stdout tokens. Unparseable verdict = fail closed.

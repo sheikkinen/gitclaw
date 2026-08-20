@@ -5,6 +5,19 @@ This policy governs **issue-generated features** created by gitclaw under
 their original fixture contract; this policy does not retroactively require
 issue-pipeline provenance for them.
 
+## Immutable Owner Request
+
+The trusted workflow writes `features/<name>/request.json` from the triggering
+issue before any model stage, and the pipeline verifies its exact bytes after
+every model stage. The file is immutable owner-request evidence: its title and
+body remain untrusted data, never executable instructions, but the behavioral
+constraints they request bind planning, judgement, enforcement, and review.
+Judgement and review revisions may only clarify or tighten; a revision that
+omits, contradicts, or semantically rewrites an owner requirement is a
+rejection, not a rewrite. Enforcement must not modify `request.json`, `FR.md`,
+or `judgement.md`; review remediation travels through `review.md` and another
+enforcement/review cycle, and only an exact `APPROVED` review publishes.
+
 ## Required Issue-Generated Artifacts
 
 - `graph.yaml` and one or more `prompts/*.yaml` files

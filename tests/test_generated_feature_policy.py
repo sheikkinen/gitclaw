@@ -94,3 +94,37 @@ def test_policy_and_all_stages_require_exact_candidate_output_key():
         text = read(prompt)
         assert "state_key: candidate" in text
         assert "arbitrary state" in text.lower()
+
+
+def test_policy_binds_immutable_owner_request():
+    policy = " ".join(read(POLICY_PATH).lower().split())
+    assert "request.json" in policy
+    assert "immutable" in policy
+    assert "untrusted data" in policy
+
+
+def test_plan_judge_review_bind_request_artifact():
+    for stage in ("plan", "judge", "review"):
+        assert "request.json" in read(PROMPTS[stage])
+
+
+def test_judge_and_review_keep_three_verdicts_with_rejection_boundary():
+    for stage in ("judge", "review"):
+        text = read(PROMPTS[stage])
+        assert "**Verdict:** APPROVED" in text
+        assert "**Verdict:** APPROVED WITH REVISIONS" in text
+        assert "**Verdict:** REJECTED" in text
+        assert "REJECTED" in " ".join(text.split())
+        assert "owner" in text.lower()
+
+
+def test_enforce_cannot_mutate_authority_and_consumes_review_findings():
+    text = read(PROMPTS["enforce"])
+    assert "fold every required revision" not in text
+    normalized = " ".join(text.split())
+    assert "must not" in normalized
+    assert "request.json" in normalized
+    assert (
+        "review.md and treat its findings as additive implementation constraints"
+        in normalized
+    )
