@@ -204,6 +204,7 @@ def verify(
     report = {
         "version": 1,
         "operation": operation.operation,
+        "pr": operation.pr,
         "revision": revision,
         "request_sha256": request_sha256,
         "input_head": expected_head,

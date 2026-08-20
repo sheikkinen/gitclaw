@@ -38,7 +38,26 @@ def publish(report_path: Path, repository: str, issue: int) -> dict:
             raise PublishError(f"verified path changed: {path}")
 
     operation = report["operation"]
-    branch = f"gitclaw/issue-{issue}-{operation}"
+    pr = report.get("pr")
+    if operation == "revise" and pr:
+        metadata = json.loads(
+            _run(
+                "gh",
+                "pr",
+                "view",
+                str(pr),
+                "-R",
+                repository,
+                "--json",
+                "headRefName,headRepositoryOwner",
+                capture=True,
+            )
+        )
+        if metadata["headRepositoryOwner"]["login"] != repository.split("/", 1)[0]:
+            raise PublishError("revision PR must use a branch in the target repository")
+        branch = metadata["headRefName"]
+    else:
+        branch = f"gitclaw/issue-{issue}-{operation}"
     _run("git", "switch", "-C", branch)
     _run("git", "add", "--", *paths)
     _run("git", "commit", "-m", f"{operation}(gitclaw): issue #{issue}")

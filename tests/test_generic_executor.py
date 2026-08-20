@@ -84,6 +84,8 @@ def test_workflow_isolates_agent_credentials_and_publishes_after_verify():
     assert "github.token" not in agent
     assert "COPILOT_GITHUB_TOKEN" in agent
     assert workflow.index("executor_contract verify") < workflow.index("executor_publish")
+    assert "pull/${{ steps.command.outputs.pr }}/head" in workflow
+    assert "git checkout --detach FETCH_HEAD" in workflow
 
 
 def test_revision_classification_is_exclusive():
@@ -169,6 +171,7 @@ def test_publisher_rechecks_report_hashes_before_side_effects(tmp_path, monkeypa
         json.dumps(
             {
                 "operation": "plan",
+                "pr": None,
                 "paths": [{"path": "artifact.md", "sha256": "0" * 64}],
             }
         )
@@ -193,6 +196,49 @@ def test_changed_paths_expands_untracked_directories(tmp_path, monkeypatch):
         "features/greeting/graph.yaml",
         "features/greeting/prompts/greeting.yaml",
     ]
+
+
+def test_revision_publisher_updates_existing_pr_branch(tmp_path, monkeypatch):
+    from tools import executor_publish
+
+    monkeypatch.chdir(tmp_path)
+    artifact = tmp_path / "src" / "app.py"
+    artifact.parent.mkdir()
+    artifact.write_text("fixed\n")
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    report = tmp_path / "report.json"
+    report.write_text(
+        json.dumps(
+            {
+                "operation": "revise",
+                "pr": 7,
+                "paths": [{"path": "src/app.py", "sha256": digest}],
+            }
+        )
+    )
+    monkeypatch.setenv("GH_TOKEN", "canary")
+    calls = []
+
+    def fake_run(*args, capture=False):
+        calls.append(args)
+        if args[:3] == ("gh", "pr", "view"):
+            return json.dumps(
+                {
+                    "headRefName": "implementation",
+                    "headRepositoryOwner": {"login": "owner"},
+                }
+            )
+        if args[:3] == ("git", "rev-parse", "HEAD"):
+            return "c" * 40
+        if args[:3] == ("gh", "pr", "list"):
+            return "https://github.com/owner/repo/pull/7"
+        return ""
+
+    monkeypatch.setattr(executor_publish, "_run", fake_run)
+    result = executor_publish.publish(report, "owner/repo", 3)
+    assert result["branch"] == "implementation"
+    assert ("git", "switch", "-C", "implementation") in calls
+    assert not any(call[:3] == ("gh", "pr", "create") for call in calls)
 
 
 def test_cron_runtime_is_byte_unchanged():

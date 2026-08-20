@@ -51,6 +51,23 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
         run: python -m tools.executor_contract classify >> "$GITHUB_OUTPUT"
 
+      - name: Prepare PR context
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          EXPECTED_PR_HEAD=""
+          if [ -n "${{ steps.command.outputs.pr }}" ]; then
+            EXPECTED_PR_HEAD="$(gh pr view '${{ steps.command.outputs.pr }}' --json headRefOid -q .headRefOid)"
+          fi
+          if [ "${{ steps.command.outputs.operation }}" = revise ] && [ -n "$EXPECTED_PR_HEAD" ]; then
+            AUTH="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64)"
+            git -c http.extraheader="AUTHORIZATION: basic $AUTH" \
+              fetch "https://github.com/${{ github.repository }}.git" \
+              "pull/${{ steps.command.outputs.pr }}/head"
+            git checkout --detach FETCH_HEAD
+          fi
+          echo "EXPECTED_PR_HEAD=$EXPECTED_PR_HEAD" >> "$GITHUB_ENV"
+
       - name: Immutable owner request
         env:
           ISSUE_TITLE: ${{ github.event.issue.title }}
@@ -84,16 +101,6 @@ jobs:
           if [ -n "$REFERENCE_PATH" ]; then git add "features/$FEATURE/reference"; fi
           git commit -m "chore(gitclaw): issue #${{ github.event.issue.number }} input"
           echo "INPUT_HEAD=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
-
-      - name: Resolve review head
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          EXPECTED_PR_HEAD=""
-          if [ "${{ steps.command.outputs.operation }}" = review ]; then
-            EXPECTED_PR_HEAD="$(gh pr view '${{ steps.command.outputs.pr }}' --json headRefOid -q .headRefOid)"
-          fi
-          echo "EXPECTED_PR_HEAD=$EXPECTED_PR_HEAD" >> "$GITHUB_ENV"
 
       - name: Configure read-only adapter context
         env:
