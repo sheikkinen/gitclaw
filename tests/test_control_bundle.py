@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -185,18 +186,64 @@ def test_verifier_accepts_committed_bundle():
     control_bundle.verify(ROOT, MANIFEST)
 
 
-@pytest.mark.parametrize("mutation", ["hash", "traversal", "duplicate"])
+def copy_bundle(tmp_path: Path) -> tuple[Path, Path]:
+    root = tmp_path / "repo"
+    root.mkdir()
+    manifest = load_manifest()
+    for entry in manifest["files"]:
+        target = root / entry["target"]
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / entry["target"], target)
+    path = root / "control-bundle.json"
+    path.write_text(json.dumps(manifest))
+    return root, path
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "unknown-key",
+        "hash",
+        "traversal",
+        "duplicate-target",
+        "duplicate-source",
+        "mode",
+        "missing",
+        "unlisted",
+        "symlink",
+        "dirty",
+    ],
+)
 def test_verifier_fails_closed(tmp_path, mutation):
     from tools import control_bundle
 
-    manifest = load_manifest()
-    if mutation == "hash":
+    root, path = copy_bundle(tmp_path)
+    manifest = json.loads(path.read_text())
+    if mutation == "unknown-key":
+        manifest["unexpected"] = True
+    elif mutation == "hash":
         manifest["files"][0]["sha256"] = "0" * 64
     elif mutation == "traversal":
         manifest["files"][0]["target"] = "../escape"
-    else:
+    elif mutation == "duplicate-target":
         manifest["files"].append(dict(manifest["files"][0]))
-    path = tmp_path / "control-bundle.json"
+    elif mutation == "duplicate-source":
+        manifest["files"][1]["source"] = manifest["files"][0]["source"]
+    elif mutation == "mode":
+        manifest["files"][0]["mode"] = (
+            "100755" if manifest["files"][0]["mode"] == "100644" else "100644"
+        )
+    elif mutation == "missing":
+        (root / manifest["files"][0]["target"]).unlink()
+    elif mutation == "unlisted":
+        (root / manifest["bundle_roots"][0] / "unlisted.txt").write_text("x")
+    elif mutation == "symlink":
+        target = root / manifest["files"][0]["target"]
+        target.unlink()
+        target.symlink_to(root / manifest["files"][1]["target"])
+    else:
+        with (root / manifest["files"][0]["target"]).open("a") as handle:
+            handle.write("dirty")
     path.write_text(json.dumps(manifest))
     with pytest.raises(control_bundle.ControlBundleError):
-        control_bundle.verify(ROOT, path)
+        control_bundle.verify(root, path)
