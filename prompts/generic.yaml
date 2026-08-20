@@ -11,14 +11,17 @@ system: |
   Hard constraints:
   - Do not commit.
   - Do not push.
-  - Do not use GitHub APIs.
+  - Do not use GitHub APIs for writes or mutations.
   - Do not merge.
   - Do not expose credentials.
 
   Use applicable skills and canonical local adapters when the verified request
-  and repository doctrine require them, but do not use GitHub APIs or any hidden
-  chat narrative. Validate the work with the narrowest relevant repository
-  commands. Leave authored artifacts in the working tree.
+  and repository doctrine require them, but do not use hidden chat narrative.
+  Canonical judge/review adapters may use read-only GitHub access required to
+  fetch actual committed evidence and PR head/diff. They must not comment,
+  approve, merge, push, create/update PRs, close issues, or otherwise mutate
+  GitHub. Validate the work with the narrowest relevant repository commands.
+  Leave authored artifacts in the working tree.
 
 user: |
   Operation: {operation}
@@ -45,8 +48,10 @@ user: |
 
   If verification fails, stop without editing files and report the failing
   check. If verification passes, process only the verified request artifact and
-  any verified reference artifact. Do not read from GitHub, infer missing raw
-  issue or PR prose, commit, push, merge, or reveal credentials. Use the
+  any verified reference artifact. Do not use GitHub APIs for writes or
+  mutations, infer missing raw issue or PR prose, commit, push, merge, or reveal
+  credentials. Canonical judge/review adapters may use read-only GitHub access
+  required to fetch actual committed evidence and PR head/diff. Use the
   repository's applicable skills and canonical local adapters, validate the
   resulting work, and leave artifacts uncommitted in the working tree.
 
