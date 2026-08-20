@@ -42,8 +42,22 @@ def extract_output(state: dict, feature: str) -> str | None:
     return candidates[0] if len(candidates) == 1 else None
 
 
+def static_gate(graph: Path) -> str | None:
+    """Feature graphs are LLM-only: a `tools:` section means shell or
+    python execution with secrets in env, every day — refuse."""
+    import yaml
+
+    config = yaml.safe_load(graph.read_text())
+    if isinstance(config, dict) and "tools" in config:
+        return "feature graph declares tools: — LLM-only graphs permitted in cron"
+    return None
+
+
 def run_feature(graph: Path, date: str) -> tuple[bool, str]:
     """Returns (ok, text): output text on success, reason on failure."""
+    refusal = static_gate(graph)
+    if refusal is not None:
+        return False, refusal
     proc = subprocess.run(
         ["yamlgraph", "graph", "run", str(graph), "--var", f"date={date}", "--json"],
         capture_output=True,
