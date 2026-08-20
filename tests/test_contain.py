@@ -8,6 +8,8 @@ from tools import contain
 ALLOW_OK = [
     "features/haiku/graph.yaml",
     "features/haiku/prompts/haiku.yaml",
+    "features/haiku/tools/fetch.py",
+    "features/haiku/tests/test_fetch.py",
     "features/haiku/FR.md",
     "features/haiku/judgement.md",
     "features/haiku/review.md",
@@ -19,6 +21,7 @@ DENY = [
     ".github/workflows/intake.yml",
     ".github/workflows/evil.yml",
     ".github/skills/judge-fr/doctrine.md",
+    "policy/generated-features.md",
     "gitclaw.yaml",
     "prompts/plan.yaml",
     "tools/ledger.py",
