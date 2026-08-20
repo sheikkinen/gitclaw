@@ -25,6 +25,7 @@ EXPECTED_ADAPTERS = [
     "scripts/author.sh",
     "scripts/judge.sh",
     "scripts/review.sh",
+    "feature-requests/TEMPLATE.md",
 ]
 
 

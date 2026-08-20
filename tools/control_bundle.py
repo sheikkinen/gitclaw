@@ -15,6 +15,7 @@ FILE_KEYS = {"source", "target", "sha256", "mode", "disposition"}
 DISPOSITIONS = {"mirror", "adapt-local"}
 EXPLICIT_TARGETS = {
     ".github/copilot-instructions.md",
+    "feature-requests/TEMPLATE.md",
     "scripts/author.sh",
     "scripts/author_preflight.py",
     "scripts/judge.sh",

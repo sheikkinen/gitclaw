@@ -201,6 +201,13 @@
       "disposition": "mirror"
     },
     {
+      "source": "feature-requests/TEMPLATE.md",
+      "target": "feature-requests/TEMPLATE.md",
+      "sha256": "cb107660252ed1b4aa121c63882e66783534424da7de585f6b539daa01d50645",
+      "mode": "100644",
+      "disposition": "mirror"
+    },
+    {
       "source": "scripts/author.sh",
       "target": "scripts/author.sh",
       "sha256": "b972e9dbc3eef4e2cf0143ca890a88e7186dd4138d9597c8367888b3a4c96daf",

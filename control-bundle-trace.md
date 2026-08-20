@@ -53,6 +53,7 @@ not additional runtime paths.
 | Source | Target | Disposition | Rationale |
 |---|---|---|---|
 | `.github/copilot-instructions.md` | same | mirror | Canonical agent doctrine |
+| `feature-requests/TEMPLATE.md` | same | mirror | Required root template referenced by `feature-request/SKILL.md` |
 | `scripts/check_authoring_proof.py` | `scripts/control-bundle/verify.py` | adapt-local | Retains artifact-verification intent as the GitClaw bundle CLI |
 | `tools/control_bundle.py` | local only | outside bundle | FR-846 verifier implementation, not mirrored authority |
 
