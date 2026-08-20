@@ -106,9 +106,10 @@ def test_cron_output_carries_attribution(tmp_path, monkeypatch):
 
 def test_intake_gate_exit_codes(tmp_path):
     path = tmp_path / "issues.jsonl"
-    assert ledger.gate_code(path, 5) == 0  # fresh: run
-    ledger.record(path, 5, "seen")
-    ledger.record(path, 5, "planned")
-    assert ledger.gate_code(path, 5) == 65  # interrupted: human recovery
-    ledger.record(path, 5, "judged_rejected")
-    assert ledger.gate_code(path, 5) == 78  # terminal: idempotent skip
+    repository = "sheikkinen/gitclaw"
+    assert ledger.gate_code(path, repository, 5) == 0  # fresh: run
+    ledger.record(path, repository, 5, "seen")
+    ledger.record(path, repository, 5, "planned")
+    assert ledger.gate_code(path, repository, 5) == 65  # interrupted
+    ledger.record(path, repository, 5, "judged_rejected")
+    assert ledger.gate_code(path, repository, 5) == 78  # terminal skip
