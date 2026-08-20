@@ -84,3 +84,13 @@ def test_all_stages_apply_composition_boundary():
         assert "composition" in text.lower()
         assert "source_snapshots" in text
         assert "sibling" in text.lower()
+
+
+def test_policy_and_all_stages_require_exact_candidate_output_key():
+    policy = read(POLICY_PATH)
+    assert "state_key: candidate" in policy
+    assert "arbitrary state" in policy.lower()
+    for prompt in PROMPTS.values():
+        text = read(prompt)
+        assert "state_key: candidate" in text
+        assert "arbitrary state" in text.lower()

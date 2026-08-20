@@ -354,6 +354,52 @@ def test_run_feature_injects_only_explicit_extra_variables(tmp_path, monkeypatch
     ]
 
 
+def test_three_plain_source_states_compose_in_order(tmp_path, monkeypatch):
+    declared = ("source-c", "source-a", "source-b")
+    candidates = {name: f"candidate:{name}\nUnicode: Oulu ä" for name in declared}
+    captured_envelope = []
+
+    def fake_process(command, timeout=600):
+        graph = Path(command[3])
+        name = graph.parent.name
+        if name == "composer":
+            value = command[command.index("--var", 6) + 1]
+            captured_envelope.append(value.removeprefix("source_snapshots="))
+            candidate = "assembled"
+        else:
+            candidate = candidates[name]
+        state = {
+            "date": DATE,
+            "source_snapshots": "must not become output",
+            "candidate": candidate,
+        }
+        return 0, json.dumps(state).encode(), b"", None
+
+    monkeypatch.setattr(cron_run, "_run_bounded", fake_process)
+    results = {}
+    for name in declared:
+        graph = add_feature(tmp_path, name)
+        results[name] = cron_run.run_feature(graph, DATE)
+        assert results[name] == (True, candidates[name])
+
+    envelope_ok, envelope = cron_run._source_envelope(declared, results)
+    assert envelope_ok is True
+    composer = add_feature(tmp_path, "composer", list(declared))
+    assert cron_run.run_feature(composer, DATE, {"source_snapshots": envelope}) == (
+        True,
+        "assembled",
+    )
+    assert captured_envelope == [envelope]
+    assert json.loads(envelope) == [
+        {
+            "feature": name,
+            "status": "succeeded",
+            "candidate": candidates[name],
+        }
+        for name in declared
+    ]
+
+
 def test_run_feature_rejects_oversize_process_stdout(tmp_path, monkeypatch):
     graph = add_feature(tmp_path, "noisy")
 

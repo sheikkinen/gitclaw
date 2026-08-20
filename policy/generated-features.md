@@ -10,7 +10,8 @@ issue-pipeline provenance for them.
 - `graph.yaml` and one or more `prompts/*.yaml` files
 - `FR.md`, `judgement.md`, `review.md`, and `authoring-report.md`
 - input variable `date`
-- exactly one non-empty final output candidate
+- exactly one non-empty final output candidate under `state_key: candidate`;
+  cron must not infer output from arbitrary state values
 
 ## Optional Contained Artifacts
 

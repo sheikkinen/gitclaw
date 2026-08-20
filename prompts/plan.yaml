@@ -26,6 +26,9 @@ user: |
   contained tools. Reject or defer any capability forbidden by
   policy/generated-features.md.
 
+  Require exactly one non-empty final output under state_key: candidate. Do not
+  permit cron to infer output from an arbitrary state value.
+
   If the request composes existing features, freeze the exact dependency slugs
   and require the policy's strict composition.json plus fixed
   source_snapshots input. Define partial and all-dependency failure behavior.

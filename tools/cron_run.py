@@ -28,6 +28,19 @@ MAX_PROCESS_STDOUT_BYTES = 512 * 1024
 MAX_PROCESS_STDERR_BYTES = 64 * 1024
 MAX_REASON_CHARS = 500
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+RESERVED_STATE_KEYS = {
+    "_agent_iterations",
+    "_agent_limit_reached",
+    "_loop_counts",
+    "_loop_limit_reached",
+    "candidate",
+    "current_step",
+    "date",
+    "errors",
+    "messages",
+    "run_instant",
+    "source_snapshots",
+}
 
 
 class ManifestError(ValueError):
@@ -106,14 +119,29 @@ def _coerce(value, key: str) -> str | None:
     return None
 
 
+def _coerce_candidate(value) -> str | None:
+    if isinstance(value, str) and value.strip():
+        return value
+    if isinstance(value, dict) and set(value) == {"candidate"}:
+        candidate = value["candidate"]
+        if isinstance(candidate, str) and candidate.strip():
+            return candidate
+    return None
+
+
 def extract_output(state: dict, feature: str) -> str | None:
     text = _coerce(state.get(feature), feature)
+    if text is not None:
+        return text
+    text = _coerce_candidate(state.get("candidate"))
     if text is not None:
         return text
     # generated graphs pick their own state_key; accept a lone
     # self-named candidate, fail closed on zero or many
     candidates = [
-        _coerce(v, k) for k, v in state.items() if isinstance(v, dict) and k in v
+        _coerce(v, k)
+        for k, v in state.items()
+        if k not in RESERVED_STATE_KEYS and isinstance(v, dict) and k in v
     ]
     candidates = [c for c in candidates if c is not None]
     return candidates[0] if len(candidates) == 1 else None

@@ -19,6 +19,8 @@ user: |
   - **Verdict:** REJECTED
 
   Constraints for generated gitclaw features:
+  - Require exactly one non-empty final output under state_key: candidate;
+    reject arbitrary state values as inferred output.
   - Permit compliant read-only public tools when their origins, bounds,
     parsers, timeouts, and failure behavior are frozen in the FR.
   - Reject new-secret, authenticated, external-write, unbounded-data,

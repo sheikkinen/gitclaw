@@ -59,6 +59,23 @@ def test_extract_output_plain_str():
     assert cron_run.extract_output({"horoscope": "sunny"}, "horoscope") == "sunny"
 
 
+def test_extract_output_plain_candidate_key():
+    state = {
+        "date": "2026-08-20",
+        "run_instant": "2026-08-20T08:00:00Z",
+        "source_snapshots": '[{"status":"failed"}]',
+        "candidate": "source snapshot",
+    }
+    assert cron_run.extract_output(state, "different-feature-slug") == (
+        "source snapshot"
+    )
+
+
+def test_extract_output_nested_candidate_key():
+    state = {"date": "2026-08-20", "candidate": {"candidate": "snapshot"}}
+    assert cron_run.extract_output(state, "different-feature-slug") == "snapshot"
+
+
 def test_extract_output_single_value_dict():
     state = {"aphorism": {"result": "less is more"}}
     assert cron_run.extract_output(state, "aphorism") == "less is more"
@@ -82,6 +99,66 @@ def test_extract_output_fallback_single_output_key():
 def test_extract_output_ambiguous_fails_closed():
     state = {"date": "x", "a": {"a": "one"}, "b": {"b": "two"}}
     assert cron_run.extract_output(state, "no-such-key") is None
+
+
+def test_extract_output_invalid_candidate_does_not_select_metadata():
+    state = {
+        "date": "2026-08-20",
+        "run_instant": "2026-08-20T08:00:00Z",
+        "source_snapshots": "input envelope",
+        "candidate": {"first": "one", "second": "two"},
+    }
+    assert cron_run.extract_output(state, "different-feature-slug") is None
+
+
+def test_extract_output_candidate_dict_requires_exact_self_key():
+    assert (
+        cron_run.extract_output(
+            {"candidate": {"wrong": "leak"}}, "different-feature-slug"
+        )
+        is None
+    )
+    assert (
+        cron_run.extract_output(
+            {"candidate": {"candidate": "leak", "extra": "also"}},
+            "different-feature-slug",
+        )
+        is None
+    )
+
+
+def test_extract_output_reserved_nested_metadata_is_not_output():
+    for key in (
+        "_agent_iterations",
+        "_agent_limit_reached",
+        "_loop_counts",
+        "_loop_limit_reached",
+        "date",
+        "run_instant",
+        "source_snapshots",
+        "errors",
+        "messages",
+        "current_step",
+    ):
+        assert (
+            cron_run.extract_output({key: {key: "leak"}}, "different-feature-slug")
+            is None
+        )
+
+
+def test_extract_output_precedence_is_feature_then_candidate_then_legacy():
+    state = {
+        "feature": "feature output",
+        "candidate": "candidate output",
+        "legacy": {"legacy": "legacy output"},
+    }
+    assert cron_run.extract_output(state, "feature") == "feature output"
+    assert cron_run.extract_output(state, "missing-feature") == "candidate output"
+
+
+def test_extract_output_ignores_arbitrary_plain_state_strings():
+    state = {"date": "2026-08-20", "unrelated": "must not publish"}
+    assert cron_run.extract_output(state, "missing-feature") is None
 
 
 def test_cron_main_exit_codes(tmp_path, monkeypatch):
