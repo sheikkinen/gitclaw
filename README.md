@@ -123,7 +123,10 @@ multi-user operation.
   point of them — which means cron executes LLM-reviewed shell/python
   daily with secrets in env. The review phase and the trust gate are
   the barriers; inspect `features/*/graph.yaml` after each merge if
-  that trade is too sharp for your fork.
+  that trade is too sharp for your fork. The binding
+  [generated-feature policy](policy/generated-features.md) permits
+  bounded, unauthenticated reads from named public sources, but forbids
+  generated features from reading credentials or performing external writes.
 
 **Sharp edges for adopters:**
 
@@ -153,6 +156,9 @@ multi-user operation.
 - A failed cron feature is recorded (`outputs/<date>-<name>.failed.json`)
   and does not block other features; the job exits 1 as an operator
   signal.
+- Public-source tools run with network access and can break when upstream
+  availability or schemas change; these failures must surface through the
+  feature's explicit failure contract and `.failed.json`.
 - One remediation lap on review rejection, then final reject — no
   infinite enforce loops.
 - `tools/` requires Python ≥ 3.10 (`X | Y` unions); workflows pin 3.12.

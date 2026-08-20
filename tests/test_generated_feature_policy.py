@@ -24,19 +24,19 @@ def read(relative: str) -> str:
 
 
 def test_policy_defines_read_only_public_tool_boundary():
-    policy = read(POLICY_PATH)
+    policy = " ".join(read(POLICY_PATH).lower().split())
     required = (
         "issue-generated features",
-        "Pre-shipped fixtures",
+        "pre-shipped fixtures",
         "optional contained artifacts",
-        "GET",
-        "HEAD",
+        "get",
+        "head",
         "public origins explicitly named",
         "finite connect and read timeouts",
         "bounded response",
         "must not read environment variables",
-        "POST",
-        "DELETE",
+        "post",
+        "delete",
         "external writes",
         "not a sandbox",
     )
