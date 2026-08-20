@@ -13,12 +13,11 @@ import time
 from pathlib import Path
 
 
-def extract_output(state: dict, feature: str) -> str | None:
-    value = state.get(feature)
+def _coerce(value, key: str) -> str | None:
     if isinstance(value, str) and value.strip():
         return value
     if isinstance(value, dict):
-        inner = value.get(feature)
+        inner = value.get(key)
         if isinstance(inner, str) and inner.strip():
             return inner
         if len(value) == 1:
@@ -26,6 +25,21 @@ def extract_output(state: dict, feature: str) -> str | None:
             if isinstance(only, str) and only.strip():
                 return only
     return None
+
+
+def extract_output(state: dict, feature: str) -> str | None:
+    text = _coerce(state.get(feature), feature)
+    if text is not None:
+        return text
+    # generated graphs pick their own state_key; accept a lone
+    # self-named candidate, fail closed on zero or many
+    candidates = [
+        _coerce(v, k)
+        for k, v in state.items()
+        if isinstance(v, dict) and k in v
+    ]
+    candidates = [c for c in candidates if c is not None]
+    return candidates[0] if len(candidates) == 1 else None
 
 
 def run_feature(graph: Path, date: str) -> tuple[bool, str]:
