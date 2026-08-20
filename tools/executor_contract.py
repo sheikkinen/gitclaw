@@ -162,6 +162,11 @@ def _enforce(paths: list[str], target: str) -> list[str]:
             for heading in ("Artifacts", "Precedent", "Validation", "Repairs", "Blocked validation")
         ):
             _fail("graph work lacks valid authoring report")
+        digest = _sha256(report)
+        durable = Path("reports") / f"authoring-{digest}.md"
+        durable.parent.mkdir(exist_ok=True)
+        durable.write_bytes(report.read_bytes())
+        paths = sorted(set(paths + [durable.as_posix()]))
     return paths
 
 

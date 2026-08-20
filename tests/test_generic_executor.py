@@ -144,7 +144,9 @@ def test_enforce_gate_keeps_authority_immutable_and_requires_report(tmp_path, mo
     report = tmp_path / "tmp" / "draft-authoring-report.md"
     report.parent.mkdir()
     report.write_text("Artifacts Precedent Validation Repairs Blocked validation")
-    assert _enforce(["features/greeting/graph.yaml"], "feature-requests/FR-001.md")
+    paths = _enforce(["features/greeting/graph.yaml"], "feature-requests/FR-001.md")
+    durable = [path for path in paths if path.startswith("reports/authoring-")]
+    assert len(durable) == 1 and (tmp_path / durable[0]).read_bytes() == report.read_bytes()
     with pytest.raises(ExecutorContractError):
         _enforce(["feature-requests/FR-001.md"], "feature-requests/FR-001.md")
 
