@@ -18,6 +18,7 @@ tools:
       python -m tools.ledger record {issue_number} seen
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} seen"
+      && git pull --rebase && git push
     description: "Record the seen ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -28,6 +29,7 @@ tools:
       python -m tools.ledger record {issue_number} planned
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} planned"
+      && git pull --rebase && git push
     description: "Record the planned ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -38,6 +40,7 @@ tools:
       python -m tools.ledger record {issue_number} judged_approved
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} judged_approved"
+      && git pull --rebase && git push
     description: "Record the judged_approved ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -48,6 +51,7 @@ tools:
       python -m tools.ledger record {issue_number} enforced
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} enforced"
+      && git pull --rebase && git push
     description: "Record the enforced ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -58,6 +62,7 @@ tools:
       python -m tools.ledger record {issue_number} reviewed_approved
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} reviewed_approved"
+      && git pull --rebase && git push
     description: "Record the reviewed_approved ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -68,6 +73,7 @@ tools:
       python -m tools.ledger record {issue_number} reviewed_rejected
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} reviewed_rejected"
+      && git pull --rebase && git push
     description: "Record the reviewed_rejected ledger transition and commit state/issues.jsonl."
     parse: text
     timeout: 120
@@ -78,6 +84,7 @@ tools:
       python -m tools.ledger record {issue_number} judged_rejected
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} judged_rejected"
+      && git pull --rebase && git push
       && gh issue comment {issue_number} --body-file features/{feature_name}/judgement.md
       && gh issue close {issue_number}
     description: "Record a rejected judgement, commit the ledger, post judgement.md, and close the issue."
@@ -91,6 +98,7 @@ tools:
       && python -m tools.ledger record {issue_number} reviewed_rejected_final
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} reviewed_rejected_final"
+      && git pull --rebase && git push
       && gh issue comment {issue_number} --body-file features/{feature_name}/review.md
       && gh issue close {issue_number}
     description: "Record the final rejected review path, commit the ledger, post review.md, and close the issue."
@@ -132,14 +140,16 @@ tools:
     command: >-
       git add features/{feature_name} state/issues.jsonl
       && git commit -m "feat(gitclaw): #{issue_number} {feature_name}"
-      && git push
+      && git pull --rebase &&
+      git push
       && python -m tools.ledger record {issue_number} pushed
       && gh issue comment {issue_number} --body "Implemented in $(git rev-parse HEAD)"
       && python -m tools.ledger record {issue_number} closed
       && git add state/issues.jsonl
       && git commit -m "gitclaw: #{issue_number} closed"
       && gh issue close {issue_number}
-      && git push
+      && git pull --rebase &&
+      git push
     description: "Commit and push the contained feature, record pushed and closed ledger transitions, comment, close, and push the ledger."
     parse: text
     timeout: 120
