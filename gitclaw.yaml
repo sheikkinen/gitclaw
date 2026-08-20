@@ -399,15 +399,24 @@ edges:
     to: END
   - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce == null"
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce == null"
   - from: read_review_verdict
     to: ledger_reviewed_rejected
-    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce < 2"
+    condition: "review_verdict == 'APPROVED WITH REVISIONS' and _loop_counts.enforce == null"
+  - from: read_review_verdict
+    to: ledger_reviewed_rejected
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce < 2"
+  - from: read_review_verdict
+    to: ledger_reviewed_rejected
+    condition: "review_verdict == 'APPROVED WITH REVISIONS' and _loop_counts.enforce < 2"
   - from: ledger_reviewed_rejected
     to: enforce
   - from: read_review_verdict
     to: reject_final
-    condition: "(review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS') and _loop_counts.enforce >= 2"
+    condition: "review_verdict == 'REJECTED' and _loop_counts.enforce >= 2"
+  - from: read_review_verdict
+    to: reject_final
+    condition: "review_verdict == 'APPROVED WITH REVISIONS' and _loop_counts.enforce >= 2"
   - from: reject_final
     to: END
   - from: read_review_verdict

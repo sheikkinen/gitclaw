@@ -227,11 +227,15 @@ def test_graph_keeps_three_verdicts_and_gates_push_on_exact_approved():
         not in graph
     )
     assert "condition: \"review_verdict == 'APPROVED'\"" in graph
-    # review revisions join the remediation lap
-    assert (
-        "review_verdict == 'REJECTED' or review_verdict == 'APPROVED WITH REVISIONS'"
-        in graph
-    )
+    # review revisions join the remediation lap; conditions stay flat because
+    # the yamlgraph condition parser rejects parenthesized grouping
+    for verdict in ("REJECTED", "APPROVED WITH REVISIONS"):
+        assert f"review_verdict == '{verdict}' and _loop_counts.enforce == null" in graph
+        assert f"review_verdict == '{verdict}' and _loop_counts.enforce < 2" in graph
+        assert f"review_verdict == '{verdict}' and _loop_counts.enforce >= 2" in graph
+    for line in graph.splitlines():
+        if "condition:" in line:
+            assert "(" not in line, line
     # unknown review verdicts still fail closed
     assert (
         "review_verdict != 'APPROVED' and review_verdict != 'REJECTED' "
