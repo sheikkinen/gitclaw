@@ -107,9 +107,11 @@ multi-user operation.
 - `GITHUB_TOKEN` cannot modify `.github/workflows/**` (GitHub blocks
   this for Actions tokens) — workflow self-modification is refused at
   the platform layer.
-- The cron runner refuses feature graphs that declare a `tools:`
-  section (LLM-only graphs execute daily) — a generated feature
-  cannot install a persistent shell payload via cron.
+- Generated feature graphs may declare and use tools — that is the
+  point of them — which means cron executes LLM-reviewed shell/python
+  daily with secrets in env. The review phase and the trust gate are
+  the barriers; inspect `features/*/graph.yaml` after each merge if
+  that trade is too sharp for your fork.
 
 **Sharp edges for adopters:**
 
