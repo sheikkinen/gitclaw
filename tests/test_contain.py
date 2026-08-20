@@ -49,3 +49,10 @@ def test_mixed_diff_reports_only_violations():
 def test_traversal_rejected():
     assert contain.violations(["features/haiku/../../.github/x.yml"], "haiku")
     assert contain.violations(["features/haiku/./../evil.py"], "haiku")
+
+
+def test_untracked_dir_trailing_slash_allowed():
+    """git status reports untracked dirs as 'features/haiku/'."""
+    assert contain.violations(["features/haiku/"], "haiku") == []
+    assert contain.violations(["features/other/"], "haiku") == ["features/other/"]
+    assert contain.violations([".github/"], "haiku") == [".github/"]
