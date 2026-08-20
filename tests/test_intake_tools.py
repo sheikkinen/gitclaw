@@ -16,6 +16,35 @@ def test_slug_bounded_and_nonempty():
     assert slug.make("!!! ???") == "feature"
 
 
+def test_slug_unique_no_collision(tmp_path):
+    assert slug.unique("Daily haiku", 7, root=tmp_path) == "daily-haiku"
+
+
+def test_slug_unique_collision_appends_issue(tmp_path):
+    # two similar titles must not share features/<name>/
+    (tmp_path / "daily-haiku").mkdir()
+    assert slug.unique("Daily haiku", 7, root=tmp_path) == "daily-haiku-7"
+
+
+def test_slug_unique_collision_stays_bounded(tmp_path):
+    long_title = "x " * 100
+    (tmp_path / slug.make(long_title)).mkdir()
+    s = slug.unique(long_title, 12345, root=tmp_path)
+    assert len(s) <= 40 and s.endswith("-12345")
+
+
+def test_run_feature_timeout_recorded(tmp_path, monkeypatch):
+    # a hung feature must be recorded as failed, not crash the loop
+    import subprocess
+
+    def hang(*a, **kw):
+        raise subprocess.TimeoutExpired(cmd="yamlgraph", timeout=600)
+
+    monkeypatch.setattr(cron_run.subprocess, "run", hang)
+    ok, reason = cron_run.run_feature(tmp_path / "features" / "slow" / "graph.yaml", "2026-08-20")
+    assert ok is False and "timeout" in reason
+
+
 def test_extract_output_nested_dict():
     # inline-schema LLM nodes nest: state.haiku == {'haiku': text}
     state = {"date": "2026-08-20", "haiku": {"haiku": "text here"}}
