@@ -2,20 +2,25 @@ name: cron
 
 on:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 4 * * *"
   workflow_dispatch:
+
+env:
+  YAMLGRAPH_TASK: ${{ vars.YAMLGRAPH_TASK }}
 
 concurrency:
   group: gitclaw-cron
   cancel-in-progress: false
 
 jobs:
-  run-features:
+  run-task:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -24,27 +29,21 @@ jobs:
       - name: Install runtime
         run: pip install yamlgraph
 
-      - name: Git identity
+      - name: Validate task
         run: |
-          git config user.name "gitclaw-bot"
-          git config user.email "actions@github.com"
+          case "$YAMLGRAPH_TASK" in
+            ""|/*|..|../*|*/..|*/../*) exit 1 ;;
+          esac
+          case "$YAMLGRAPH_TASK" in
+            *.yaml) ;;
+            *) exit 1 ;;
+          esac
+          test -f "$YAMLGRAPH_TASK"
+          test ! -L "$YAMLGRAPH_TASK"
+          git ls-files --error-unmatch -- "$YAMLGRAPH_TASK" >/dev/null
 
-      - name: Run all features (continue past failures)
-        id: run
+      - name: Run task
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          set +e
-          python -m tools.cron_run
-          echo "code=$?" >> "$GITHUB_OUTPUT"
-
-      # commit whatever succeeded BEFORE failing the job on failures
-      - name: Commit outputs
-        run: |
-          git add outputs
-          git diff --cached --quiet || git commit -m "cron: $(date -u +%F) feature outputs"
-          git push
-
-      - name: Surface failures
-        if: steps.run.outputs.code != '0'
-        run: exit 1
+          yamlgraph graph run "$YAMLGRAPH_TASK" --full

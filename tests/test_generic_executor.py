@@ -8,10 +8,6 @@ import pytest
 
 
 ROOT = Path(__file__).parents[1]
-CRON_HASHES = {
-    ".github/workflows/cron.yml": "c242d8008ba351b37ee9a28b2f31d0e7de757cef52b0efa5795a4952aa028779",
-    "tools/cron_run.py": "aedafd7e735ee178cf39415ab55c413e53ceea1d792ce07208461bb0b7891e80",
-}
 
 
 def test_exact_command_parser():
@@ -281,8 +277,3 @@ def test_replan_publisher_does_not_touch_existing_pr_branch(tmp_path, monkeypatc
     assert result["branch"] == "gitclaw/issue-3-revise"
     assert not any(call[:3] == ("gh", "pr", "view") for call in calls)
     assert any(call[:3] == ("gh", "pr", "create") for call in calls)
-
-
-def test_cron_runtime_is_byte_unchanged():
-    for relative, expected in CRON_HASHES.items():
-        assert hashlib.sha256((ROOT / relative).read_bytes()).hexdigest() == expected

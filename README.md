@@ -6,7 +6,7 @@ gitclaw is a public YAMLGraph integration demo and project template. A trusted
 issue starts one generic Copilot executor. Repository instructions and mirrored
 YAMLGraph skills decide the intellectual workflow; deterministic scripts verify
 artifacts and own every Git/GitHub side effect. A separate cron workflow keeps
-running committed YAMLGraph features.
+running one configured YAMLGraph task.
 
 ## Setup
 
@@ -14,8 +14,10 @@ running committed YAMLGraph features.
 2. Add `COPILOT_CLI_TOKEN`: a dedicated Copilot credential/account with **no
    repository-write access**. The executor receives this token, so a normal
    write-capable `gh auth token` is not an acceptable unattended credential.
-3. Add `ANTHROPIC_API_KEY` only when scheduled feature graphs require it.
-4. File a trusted issue using one exact command title. The body is optional
+3. Add `ANTHROPIC_API_KEY` for the scheduled starter task.
+4. Set the repository variable `YAMLGRAPH_TASK` to the starter value
+  `features/haiku/graph.yaml`.
+5. File a trusted issue using one exact command title. The body is optional
    supporting detail.
 
 ```text
@@ -105,13 +107,21 @@ modify them.
 
 ## Scheduled YAMLGraph Runtime
 
-`cron.yml` remains independent from issue execution. At 06:00 UTC or manual
-dispatch it runs committed `features/*/graph.yaml` artifacts, bounds child
-process time/stdout/stderr, validates optional composition DAGs, records Markdown
-candidates or `.failed.json`, and commits outputs before surfacing failures.
+Cron schedules one YAMLGraph task. `cron.yml` remains independent from issue
+execution and invokes the configured task at 06:00 UTC or by manual dispatch.
+The workflow validates that `YAMLGRAPH_TASK` names a tracked regular YAML file,
+then runs exactly:
 
-Cron and composition behavior were intentionally unchanged by the generic
-executor replacement.
+```bash
+YAMLGRAPH_TASK=features/haiku/graph.yaml
+yamlgraph graph run "$YAMLGRAPH_TASK" --full
+```
+
+The same command runs from a normal checkout. The task owns its inputs, outputs,
+effects, and failure semantics; cron does not discover graphs, inject dates,
+interpret state, write files, or publish commits. The starter task resolves its
+own date, defaults the city to Oulu, Finland, and accepts an optional city
+override when run manually.
 
 ## Development
 
@@ -131,9 +141,9 @@ infrastructure and require human review before push.
 - Generated code is not runtime-sandboxed.
 - Provider and action versions are not yet fully pinned.
 - GitHub scheduled workflows may run late.
-- Upstream APIs and schemas drift; cron records failures rather than inventing
-  replacement output.
+- Upstream APIs and schemas drift; task failures propagate through the
+  YAMLGraph command and fail the scheduled job.
 - No automatic merge occurs.
 
-Generated output carries gitclaw/yamlgraph attribution. The license disclaims
-warranty; the repository owner remains accountable for published artifacts.
+The license disclaims warranty; the repository owner remains accountable for
+task effects and published artifacts.

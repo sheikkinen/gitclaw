@@ -50,7 +50,7 @@ def _validation_result(root: Path, task: str) -> subprocess.CompletedProcess[str
 
 def test_cron_is_read_only_one_task_invocation() -> None:
     workflow = _workflow()
-    assert 'cron: "0 6 * * *"' in workflow
+    assert 'cron: "0 4 * * *"' in workflow
     assert "workflow_dispatch:" in workflow
     assert "contents: read" in workflow
     assert "persist-credentials: false" in workflow
@@ -119,7 +119,7 @@ def test_haiku_is_the_only_example_and_owns_date() -> None:
 
     graph = HAIKU_GRAPH.read_text()
     prompt = HAIKU_PROMPT.read_text()
-    assert 'city: "Oulu, Finland"' in graph
+    assert re.search(r"city: ['\"]?Oulu, Finland['\"]?$", graph, re.MULTILINE)
     assert "command: date +%Y-%m-%d" in graph
     assert "type: tool" in graph
     assert "type: python" not in graph
