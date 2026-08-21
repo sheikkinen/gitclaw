@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
 outputs/routes/
+tmp/
+logs/*.log
 .env
