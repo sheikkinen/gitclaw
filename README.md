@@ -108,7 +108,7 @@ modify them.
 ## Scheduled YAMLGraph Runtime
 
 Cron schedules one YAMLGraph task. `cron.yml` remains independent from issue
-execution and invokes the configured task at 06:00 UTC or by manual dispatch.
+execution and invokes the configured task at 04:00 UTC or by manual dispatch.
 The workflow validates that `YAMLGRAPH_TASK` names a tracked regular YAML file,
 then runs exactly:
 

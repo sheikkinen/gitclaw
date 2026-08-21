@@ -109,6 +109,7 @@ def test_readme_documents_starter_and_exact_command() -> None:
     readme = README.read_text()
     assert "YAMLGRAPH_TASK=features/haiku/graph.yaml" in readme
     assert RUN_COMMAND in readme
+    assert "04:00 UTC" in readme
     assert "Cron schedules one YAMLGraph task" in readme
     assert "task owns" in readme.lower()
 
