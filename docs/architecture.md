@@ -43,7 +43,8 @@ flowchart LR
     H[Trusted operator] --> I[GitHub issue lifecycle]
     I --> A[Intake adapter]
     A --> C[Classification graph]
-    C --> T[Named YAMLGraph task and skill]
+   C --> W[Worktree runner]
+   W --> T[Named YAMLGraph task and skill]
     T --> G[GitOps adapter]
     G --> R[Branch / PR / issue result]
     R --> H
@@ -55,6 +56,62 @@ flowchart LR
 GitHub is the external system of record. YAMLGraph is the semantic execution
 engine. GitOps is the only repository-write component. Acceptance is outside
 the production lifecycle.
+
+## Canonical Execution Process
+
+```mermaid
+sequenceDiagram
+    actor Operator
+    participant Issue as GitHub Issue
+    participant Intake
+    participant Classifier as YAMLGraph Classifier
+    participant Runner as Worktree Runner
+    participant Task as Named Task / Skill
+    participant GitOps
+    participant PR as GitHub PR
+
+    Operator->>Issue: Submit or edit issue
+    Issue->>Intake: Issue event
+    Intake->>Intake: Mechanical authorization check
+    Intake->>Classifier: Issue snapshot + repository context
+    Classifier-->>Issue: Record operation and PR context
+    Classifier->>Runner: Operation + new/existing PR selection
+    Runner->>Runner: Create or activate isolated worktree
+    Runner->>Task: Start task with explicit no-Git contract
+    Task-->>Runner: Files/evidence or read-only result
+    Runner->>GitOps: Completed result + worktree identity
+    GitOps->>GitOps: Commit and publish after task completion
+    GitOps-->>Issue: Record result and links
+    GitOps-->>PR: Create or update when applicable
+    Operator->>PR: Human merge decision
+```
+
+The sequence is:
+
+1. An issue is submitted or edited.
+2. Intake performs a mechanical authorization check: may this event spend the
+   configured credentials and inference budget?
+3. A small YAMLGraph classifier selects one operation: Plan, Judge, Enforce,
+   Graph, Review, or Other. It also selects the relevant PR context: an existing
+   PR, a new PR, or no PR.
+4. The classification is recorded on the issue in operator-readable form, for
+   example `Judging PR #123` or `Planning a new change`.
+5. A mechanical runner creates or activates the worktree required by that
+   classification. Existing-PR operations use the selected PR head; new-change
+   operations use an isolated worktree rooted at the declared base.
+6. The runner starts the selected task/script. Every semantic script receives
+   an explicit contract: **no Git operations and no GitHub mutations**. It may
+   read the repository, edit its assigned worktree when the operation produces
+   files, and emit evidence.
+7. After the task returns, GitOps inspects the mechanical result, commits the
+   worktree changes when applicable, pushes, and creates or updates the PR.
+8. The issue is updated with the outcome, run, commit, PR, and failure boundary.
+9. Merge is never automated.
+
+Classification is a semantic YAMLGraph result, but authorization, worktree
+creation, process execution, changed-file collection, and publication are
+mechanical. The task never prepares its own Git context. GitOps never decides
+which semantic operation should have run.
 
 ## Components
 
@@ -85,8 +142,8 @@ Intake is a thin GitHub event adapter. It:
 1. verifies the trusted-trigger policy;
 2. reads the issue snapshot from the event/API;
 3. invokes the classification graph;
-4. invokes the selected named task; and
-5. hands the completed task result to GitOps when publication is required.
+4. records the classification on the issue; and
+5. hands the classified invocation to the worktree runner.
 
 Intake must not:
 
@@ -94,6 +151,7 @@ Intake must not:
 - create or commit request files;
 - inspect semantic output content;
 - configure Git identity;
+- create or select worktrees;
 - switch branches, commit, push, or create PRs; or
 - reconcile partial publication.
 
@@ -107,7 +165,7 @@ issue snapshot. Its output names:
 
 - one supported operation;
 - the operation subject or target;
-- a PR number when relevant; and
+- PR context: existing PR number, new PR, or no PR; and
 - operator feedback when relevant.
 
 It performs no operation work and no GitHub mutation. Unsupported or ambiguous
@@ -115,6 +173,35 @@ classification is reported as an issue-run failure.
 
 The classifier replaces exact-English regex parsing. The public interface is
 the operation result, not a hardcoded title grammar.
+
+The classification is written to the issue before execution. This is progress
+reporting, not publication of a task result. It gives the operator a visible
+statement of what GitClaw believes it is doing and which PR/worktree it selected.
+
+### Worktree Runner
+
+The worktree runner is mechanical process infrastructure between classification
+and semantic execution. It:
+
+1. resolves the declared base or existing PR head;
+2. creates or activates one isolated worktree;
+3. records the starting commit and worktree path;
+4. starts exactly one named task/script in that worktree;
+5. explicitly removes GitHub write credentials from the task environment;
+6. instructs the task that Git and GitHub mutations are forbidden;
+7. waits for task completion; and
+8. reports process status, changed files, evidence paths, and final worktree
+   identity to GitOps or the issue reporter.
+
+The runner may execute Git commands only to prepare and inspect worktree state.
+It does not commit, push, create/update PRs, comment on issues, or infer semantic
+success from document content. A read-only operation such as Review or Graph
+may produce evidence without changed files. Other may be read-only or
+file-producing, as stated by its classification.
+
+Worktree selection follows classification, including the governing judgement
+for operations whose plan specifies an existing PR or branch context. The task
+does not choose or switch its own branch.
 
 ### Named YAMLGraph Tasks
 
@@ -126,8 +213,8 @@ Each operation is independent and has one semantic owner.
 | Judge | Feature request selected by issue | Judgement | Judge skill/task |
 | Enforce | Issue plus selected plan/judgement | Working-tree implementation result | Enforce task and graph-authoring skill where applicable |
 | Review | PR head plus selected plan/judgement | Review | Review skill/task |
-| Test | PR head | Test command evidence | Test task |
-| Run | PR head plus graph path and expected outcome | Lint/run evidence | YAMLGraph run task |
+| Graph | Issue plus optional PR head, graph path, and expected outcome | Lint/run evidence | YAMLGraph graph task |
+| Other | Issue plus optional PR head | Generic task evidence or working-tree result | Generic YAMLGraph task |
 
 These are ordinary task inputs and outputs. GitClaw does not maintain a
 separate artifact-authority classifier. A task validates the semantic
@@ -137,6 +224,12 @@ authority boundary.
 Tasks may inspect repository files and produce working-tree changes. They do not
 receive repository-write GitHub credentials and do not commit, push, create PRs,
 comment, close issues, or merge.
+
+The no-Git rule applies to all invoked scripts, including mirrored
+`author.sh`, `judge.sh`, and `review.sh`, and future Plan, Enforce, Graph,
+or generic scripts. Their contract is semantic work plus filesystem/evidence
+output inside the assigned worktree. Any current script guidance that requests
+a commit or push is overridden by the runner contract in GitClaw.
 
 ### Semantic Inspection
 
@@ -169,6 +262,7 @@ context needed to publish:
 - repository and issue identity;
 - base/head identity or changed-file set;
 - existing PR identity when updating; and
+- worktree path and starting/final commit identity;
 - factual publication message.
 
 The exact transport shape is an implementation decision for the GitOps
@@ -184,6 +278,10 @@ GitOps owns:
 5. PR create or update;
 6. factual issue comment; and
 7. reconciliation after partial completion.
+
+GitOps commits only after task completion. It never runs concurrently with the
+semantic task in the same worktree. For read-only operations, it records issue
+status/evidence and performs no commit or PR mutation.
 
 GitOps is idempotent by GitHub identity, not by local process history.
 
@@ -248,9 +346,10 @@ not add GitClaw lifecycle semantics.
 
 | Component | May depend on | Must not depend on |
 |---|---|---|
-| Intake | GitHub event/API, classifier, task runner, GitOps invocation | Git commands, semantic artifact formats |
+| Intake | GitHub event/API, authorization policy, classifier, runner invocation | Git commands, semantic artifact formats, publication |
 | Classifier | YAMLGraph, structured operation schema | GitOps, working-tree diffs, publication state |
-| Named task | YAMLGraph, applicable skill, repository read/worktree | GitHub write credentials, publisher internals |
+| Worktree runner | Git worktree mechanics, process execution, classifier result | semantic inspection, commits, pushes, PR/issue mutation |
+| Named task | YAMLGraph, applicable skill, assigned repository worktree | Git/GitHub mutation, branch selection, publisher internals |
 | GitOps | Git, GitHub API, mechanical task result | Issue interpretation, semantic content rules, skills/models |
 | Acceptance | GitHub issue/run/PR read interfaces | task internals, GitOps reconciliation, semantic gates |
 | Cron | configured graph path, YAMLGraph CLI | issue intake, GitOps, output interpretation |
@@ -273,6 +372,8 @@ primary protection is that semantic execution lacks repository-write authority.
 ## Operation Failure Semantics
 
 - Classification failure: report on issue; no task or GitOps execution.
+- Worktree preparation failure: report selected operation/context and mechanical
+   failure; no task or GitOps execution.
 - Semantic task failure: preserve task/run evidence; no publication unless the
   operation explicitly publishes failure evidence.
 - Mechanical validation failure: fail before GitOps.
@@ -293,6 +394,7 @@ The architecture is intentionally ahead of the current implementation.
 | `tools/request_contract.py` | Duplicates issue lifecycle as committed canonical request artifact |
 | `tools/reference_assets.py` | Separate issue-content package/manifest subsystem without current consumer |
 | `.github/workflows/intake.yml` | Mixes intake, request commit, credential setup, task invocation, verification, and GitOps |
+| Current task scripts/instructions | May carry commit-oriented repository doctrine instead of an explicit GitClaw no-Git task contract |
 | `tools/executor_publish.py` | Publishes non-transactionally without forward reconciliation contract |
 | `tools/contain.py` | Enforces semantic/platform path policy outside task owners |
 | `acceptance/kalevala-lifecycle.sh` | Reimplements lifecycle, authority merges, semantic gates, and skip propagation |
@@ -306,6 +408,10 @@ Architecture conformance is demonstrated by boundary tests and one end-to-end
 observer:
 
 - classifier maps issue snapshots to structured operations;
+- classification records operation and PR context on the issue;
+- worktree runner selects new/existing PR context and proves task environment
+   lacks GitHub write credentials;
+- named task witnesses prove no Git/GitHub mutation occurs during execution;
 - semantic task tests use task inputs/outputs without GitHub writes;
 - GitOps tests cover every partial-side-effect state;
 - credential tests prove semantic tasks lack write credentials;

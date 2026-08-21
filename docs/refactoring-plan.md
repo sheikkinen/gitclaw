@@ -12,7 +12,8 @@ the architecture defined in `docs/architecture.md`:
 ```mermaid
 flowchart LR
     I[Issue lifecycle] --> C[Classification graph]
-    C --> T[Named YAMLGraph task]
+  C --> W[Worktree runner]
+  W --> T[Named YAMLGraph task]
     T --> G[GitOps adapter]
     G --> R[GitHub result]
     R --> O[Acceptance observer]
@@ -45,15 +46,17 @@ No permanent dual path, fallback harness, or shadow lifecycle is allowed.
 | 1 | Extract reconciling GitOps adapter | 0 | Publication side effects embedded in intake/current publisher flow |
 | 2 | Add YAMLGraph issue classifier | 0 | Python regex command parser |
 | 3 | Make issue lifecycle the request | 2 | Committed request package and hash-verification subsystem |
-| 4 | Split named semantic operation tasks | 1, 2, 3 | Generic operation switch and artifact-authority gates |
-| 5 | Remove invented semantic/containment gates | 4 | Heading/verdict/path authority filters |
-| 6 | Simplify acceptance to observer | 1, 4, 5 | 291-line lifecycle acceptance harness |
-| 7 | Dispose unused reference channel and narrow control surface | 3, 5 | Unconsumed reference package and unrelated governance costume |
-| 8 | Align README, tests, and final purge | 1-7 | Mixed-design claims, orphan tests/modules |
+| 4 | Add mechanical worktree runner and no-Git task boundary | 1, 2, 3 | Worktree/Git preparation scattered across intake and semantic scripts |
+| 5 | Split named semantic operation tasks | 1-4 | Generic operation switch and artifact-authority gates |
+| 6 | Remove invented semantic/containment gates | 5 | Heading/verdict/path authority filters |
+| 7 | Simplify acceptance to observer | 1, 5, 6 | 291-line lifecycle acceptance harness |
+| 8 | Dispose unused reference channel and narrow control surface | 3, 6 | Unconsumed reference package and unrelated governance costume |
+| 9 | Align README, tests, and final purge | 1-8 | Mixed-design claims, orphan tests/modules |
 
 Subtasks 1 and 2 may be researched in parallel but should not be enforced in the
-same working tree/session. Subtask 4 is the integration hinge; no lifecycle
-command expansion belongs before it.
+same working tree/session. Subtasks 4 and 5 are the integration hinge; no
+lifecycle command expansion belongs before the runner owns worktree context and
+the tasks own semantics.
 
 ## Subtask 0 - Freeze Architecture and Baseline
 
@@ -169,7 +172,44 @@ the request lifecycle.
 - Intake performs no Git commit.
 - Plan PR changed files contain only task output, never request bookkeeping.
 
-## Subtask 4 - Split Named Semantic Operation Tasks
+## Subtask 4 - Add Mechanical Worktree Runner and No-Git Boundary
+
+### Goal
+
+Create one mechanical owner for new/existing PR worktree selection and process
+execution, and make every semantic script explicitly Git-free.
+
+### Actions
+
+- Consume classifier output containing operation plus existing/new/no-PR
+  context.
+- Create or activate an isolated worktree at the declared base or PR head.
+- Record starting commit, worktree path, and selected PR context.
+- Remove GitHub write credentials before starting the semantic task.
+- Pass an explicit no-Git/no-GitHub-mutation instruction to every invoked
+  script, including mirrored author/judge/review wrappers.
+- Collect process status, changed files, evidence paths, and final worktree
+  identity after task completion.
+- Hand the completed mechanical result to GitOps; do not commit or publish.
+- Remove worktree/branch preparation from intake and semantic scripts when their
+  final consumer moves.
+
+### Required Witnesses
+
+- New-change classification creates a worktree from the declared base.
+- Existing-PR classification activates the exact PR head.
+- Semantic task environment has no repository-write GitHub credential.
+- A task attempting Git commit/push fails without changing remote state.
+- Read-only Graph/Review result returns evidence with no changed files.
+
+### Exit Criteria
+
+- Intake never creates/selects a worktree.
+- Semantic scripts never select branches or invoke Git/GitHub mutations.
+- Runner never commits, pushes, comments, or interprets semantic content.
+- GitOps receives one completed worktree result after task exit.
+
+## Subtask 5 - Split Named Semantic Operation Tasks
 
 ### Goal
 
@@ -182,9 +222,10 @@ skills own semantics.
 - Judge: feature request -> judgement only.
 - Enforce: selected plan/judgement -> implementation result.
 - Review: PR head + governing inputs -> review.
-- Test: PR head -> test evidence, no file change.
-- Run: PR head + graph path + expected outcome -> lint/run evidence, no file
-  change.
+- Graph: issue + optional PR head + graph path/expected outcome -> lint/run
+  evidence, normally no file change.
+- Other: issue + optional PR head -> generic task evidence or working-tree
+  result as classified.
 
 ### Actions
 
@@ -198,10 +239,10 @@ skills own semantics.
 ### Exit Criteria
 
 - Plan no longer invokes Judge.
-- Judge/Test/Run are first-class tasks, not parser special cases.
+- Judge/Graph/Other are first-class tasks, not parser special cases.
 - Each task runs independently from a normal checkout with named inputs.
 
-## Subtask 5 - Remove Invented Semantic and Authority Gates
+## Subtask 6 - Remove Invented Semantic and Authority Gates
 
 ### Goal
 
@@ -231,7 +272,7 @@ from file formats/paths.
 - No Python component classifies artifact authority.
 - Credential separation and Git identity checks remain mechanically enforced.
 
-## Subtask 6 - Simplify Acceptance to Observer
+## Subtask 7 - Simplify Acceptance to Observer
 
 ### Goal
 
@@ -262,7 +303,7 @@ For one test case:
 - Script size decreases substantially as a consequence of ownership, not a line
   budget.
 
-## Subtask 7 - Dispose Reference Channel and Narrow Control Surface
+## Subtask 8 - Dispose Reference Channel and Narrow Control Surface
 
 ### Goal
 
@@ -284,7 +325,7 @@ framework governance.
 - Control-bundle verification proves the runtime closure, not an imported
   governance snapshot.
 
-## Subtask 8 - Align README, Tests, and Final Purge
+## Subtask 9 - Align README, Tests, and Final Purge
 
 ### Goal
 
@@ -326,12 +367,16 @@ The refactoring program is complete when:
 2. all Current Divergences are removed or the architecture is deliberately
    amended and re-approved;
 3. issue #4's branch-without-PR state reconciles through GitOps;
-4. Plan, Judge, Enforce, Review, Test, and Run execute as independent named
-   tasks;
-5. intake performs no Git operation;
-6. deterministic code performs no semantic artifact inspection;
-7. acceptance is only an observer; and
-8. cron remains one direct YAMLGraph command.
+4. Plan, Judge, Enforce, Graph, Review, and Other execute as independent named
+  tasks;
+5. classification records operation plus existing/new/no-PR context on the
+  issue;
+6. worktree runner prepares context and semantic scripts perform no Git/GitHub
+  mutation;
+7. intake performs no Git operation;
+8. deterministic code performs no semantic artifact inspection;
+9. acceptance is only an observer; and
+10. cron remains one direct YAMLGraph command.
 
 The final subtask adds a metacognitive reflection comparing the resulting shape
 to the architecture and plants a seed for the next simplification.
